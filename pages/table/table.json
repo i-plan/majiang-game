@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "牌桌",
+  "usingComponents": {
+    "tile": "/components/tile/index",
+    "seat-summary": "/components/seat-summary/index",
+    "action-panel": "/components/action-panel/index"
+  }
+}

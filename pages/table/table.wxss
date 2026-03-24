@@ -1,0 +1,162 @@
+.table-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.top-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  padding: 18rpx 22rpx;
+}
+
+.top-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.top-label {
+  font-size: 22rpx;
+  color: rgba(247, 240, 220, 0.68);
+}
+
+.top-value {
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.status-card {
+  padding: 20rpx 24rpx;
+}
+
+.status-text {
+  margin-top: 12rpx;
+  line-height: 1.7;
+  color: rgba(247, 240, 220, 0.88);
+}
+
+.table-stage {
+  padding: 18rpx;
+}
+
+.stage-top {
+  width: 100%;
+}
+
+.stage-middle {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr 1fr;
+  gap: 12rpx;
+  margin-top: 12rpx;
+  align-items: stretch;
+}
+
+.center-board {
+  min-height: 320rpx;
+  padding: 18rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2rpx dashed rgba(255, 255, 255, 0.08);
+}
+
+.log-item {
+  margin-top: 12rpx;
+  padding: 10rpx 12rpx;
+  border-radius: 14rpx;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(247, 240, 220, 0.82);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.human-panel {
+  padding: 22rpx;
+}
+
+.human-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.human-name-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.human-name {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.dealer-badge {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(240, 194, 97, 0.2);
+  border: 2rpx solid rgba(240, 194, 97, 0.3);
+  color: #f5d58b;
+  font-size: 22rpx;
+}
+
+.meta-group {
+  margin-top: 18rpx;
+}
+
+.meta-title {
+  display: block;
+  margin-bottom: 10rpx;
+  color: rgba(247, 240, 220, 0.72);
+  font-size: 24rpx;
+}
+
+.tag-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.meta-tag {
+  padding: 8rpx 12rpx;
+  border-radius: 14rpx;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 22rpx;
+}
+
+.meta-tag-flower {
+  background: rgba(255, 183, 226, 0.14);
+}
+
+.hand-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.hand-list {
+  display: inline-flex;
+  min-width: 100%;
+  padding-bottom: 8rpx;
+}
+
+.hand-actions {
+  margin-top: 22rpx;
+}
+
+.discard-btn {
+  width: 100%;
+}
+
+.loading-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-card {
+  width: 100%;
+  padding: 40rpx;
+  text-align: center;
+}

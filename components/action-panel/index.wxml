@@ -1,0 +1,11 @@
+<view wx:if="{{actions.length}}" class="action-panel">
+  <button
+    wx:for="{{actions}}"
+    wx:key="index"
+    class="action-btn"
+    data-index="{{index}}"
+    bindtap="handleTap"
+  >
+    {{item.label}}
+  </button>
+</view>

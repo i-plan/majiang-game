@@ -1,0 +1,80 @@
+.seat-summary {
+  width: 100%;
+  padding: 18rpx;
+}
+
+.seat-active {
+  border-color: rgba(243, 199, 104, 0.45);
+  box-shadow: 0 0 0 2rpx rgba(243, 199, 104, 0.15);
+}
+
+.seat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+
+.seat-name {
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.seat-badges {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.dealer-badge {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(240, 194, 97, 0.2);
+  border: 2rpx solid rgba(240, 194, 97, 0.3);
+  color: #f5d58b;
+  font-size: 22rpx;
+}
+
+.seat-line {
+  margin-bottom: 12rpx;
+  color: rgba(247, 240, 220, 0.72);
+  font-size: 24rpx;
+}
+
+.seat-group {
+  margin-top: 10rpx;
+}
+
+.seat-group-title {
+  display: block;
+  margin-bottom: 8rpx;
+  color: rgba(247, 240, 220, 0.72);
+  font-size: 22rpx;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.chip {
+  padding: 6rpx 12rpx;
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f7f0dc;
+  font-size: 22rpx;
+}
+
+.chip-flower {
+  background: rgba(255, 183, 226, 0.14);
+}
+
+.chip-discard {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.empty-text {
+  color: rgba(247, 240, 220, 0.46);
+  font-size: 22rpx;
+}

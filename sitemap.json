@@ -1,0 +1,7 @@
+{
+  "desc": "泉州麻将站点地图",
+  "rules": [{
+    "action": "allow",
+    "page": "*"
+  }]
+}

@@ -1,0 +1,6 @@
+<view
+  class="tile {{tile.selected ? 'tile-selected' : ''}} {{tile.small ? 'tile-small' : ''}} {{tile.flower ? 'tile-flower' : ''}} {{tile.hidden ? 'tile-hidden' : ''}}"
+  bindtap="handleTap"
+>
+  <text class="tile-label">{{tile.hidden ? '牌' : tile.label}}</text>
+</view>

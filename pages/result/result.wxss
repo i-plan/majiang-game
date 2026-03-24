@@ -1,0 +1,105 @@
+.result-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.result-summary,
+.score-card,
+.seat-card,
+.logs-card {
+  padding: 24rpx;
+}
+
+.result-type {
+  font-size: 52rpx;
+  font-weight: 700;
+}
+
+.result-text {
+  margin-top: 12rpx;
+  line-height: 1.7;
+  color: rgba(247, 240, 220, 0.82);
+}
+
+.result-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 18rpx;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18rpx 0;
+  border-bottom: 2rpx solid rgba(255, 255, 255, 0.06);
+}
+
+.score-row:last-child {
+  border-bottom: none;
+}
+
+.score-row-win .score-delta {
+  color: #90df9d;
+}
+
+.score-row-lose .score-delta {
+  color: #ff9d9d;
+}
+
+.score-name {
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.score-wind {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: rgba(247, 240, 220, 0.6);
+}
+
+.score-delta {
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.seat-block {
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx solid rgba(255, 255, 255, 0.06);
+}
+
+.seat-block:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.seat-block-name {
+  margin-bottom: 10rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.seat-line {
+  margin-top: 8rpx;
+  line-height: 1.7;
+  color: rgba(247, 240, 220, 0.82);
+}
+
+.log-item {
+  margin-top: 12rpx;
+  padding: 10rpx 12rpx;
+  border-radius: 14rpx;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(247, 240, 220, 0.82);
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}

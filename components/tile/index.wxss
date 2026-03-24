@@ -1,0 +1,41 @@
+.tile {
+  width: 72rpx;
+  min-width: 72rpx;
+  height: 104rpx;
+  margin-right: 10rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(180deg, #f7f1df 0%, #e8dbbf 100%);
+  color: #30210a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 18rpx rgba(0, 0, 0, 0.16);
+}
+
+.tile-small {
+  width: 56rpx;
+  min-width: 56rpx;
+  height: 82rpx;
+  margin-right: 8rpx;
+}
+
+.tile-hidden {
+  background: linear-gradient(180deg, #6d4a20 0%, #533410 100%);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tile-flower {
+  background: linear-gradient(180deg, #f7e6f2 0%, #ead2df 100%);
+}
+
+.tile-selected {
+  transform: translateY(-10rpx);
+  border-color: #f3c768;
+  box-shadow: 0 12rpx 28rpx rgba(243, 199, 104, 0.28);
+}
+
+.tile-label {
+  font-size: 26rpx;
+  font-weight: 700;
+}

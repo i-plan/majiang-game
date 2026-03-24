@@ -1,0 +1,43 @@
+<view wx:if="{{view}}" class="page-shell result-page">
+  <view class="result-summary card">
+    <view class="result-type">{{view.typeLabel}}</view>
+    <view class="result-text">{{view.summaryText}}</view>
+    <view class="result-tags">
+      <text class="pill">赢家 {{view.winnerLabel}}</text>
+      <text wx:if="{{view.discarderLabel}}" class="pill">放炮 {{view.discarderLabel}}</text>
+      <text wx:if="{{view.winningTileLabel}}" class="pill">胡牌 {{view.winningTileLabel}}</text>
+    </view>
+  </view>
+
+  <view class="score-card card">
+    <view class="section-title">本局结算</view>
+    <view wx:for="{{view.seatResults}}" wx:key="seatId" class="score-row {{item.isWinner ? 'score-row-win' : ''}} {{item.isDiscarder ? 'score-row-lose' : ''}}">
+      <view>
+        <view class="score-name">{{item.displayName}}</view>
+        <view class="score-wind">{{item.windLabel}}</view>
+      </view>
+      <view class="score-delta">{{item.deltaText}}</view>
+    </view>
+  </view>
+
+  <view class="seat-card card">
+    <view class="section-title">终局牌面</view>
+    <view wx:for="{{view.seatResults}}" wx:key="seatId" class="seat-block">
+      <view class="seat-block-name">{{item.displayName}} · {{item.windLabel}}</view>
+      <view class="seat-line">手牌：{{item.concealedLabels.length ? item.concealedLabels.join(' ') : '无'}}</view>
+      <view class="seat-line">副露：{{item.meldTexts.length ? item.meldTexts.join(' / ') : '无'}}</view>
+      <view class="seat-line">花牌：{{item.flowerLabels.length ? item.flowerLabels.join(' ') : '无'}}</view>
+      <view class="seat-line">弃牌：{{item.discardLabels.length ? item.discardLabels.join(' ') : '无'}}</view>
+    </view>
+  </view>
+
+  <view class="logs-card card">
+    <view class="section-title">最近动作</view>
+    <view wx:for="{{view.recentLogs}}" wx:key="id" class="log-item">{{item.text}}</view>
+  </view>
+
+  <view class="button-group">
+    <button class="primary-btn" bindtap="onReplay">再来一局</button>
+    <button class="secondary-btn" bindtap="onBackHome">返回首页</button>
+  </view>
+</view>
