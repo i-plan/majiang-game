@@ -1,0 +1,13 @@
+{
+  "name": "majiang-game",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "test:ai": "node --test --test-concurrency=1 tests/ai.test.js",
+    "test:core": "node --test --test-concurrency=1 tests/action-evaluator.test.js tests/game-session.test.js tests/rules.test.js tests/settlement.test.js",
+    "test:page": "node --test --test-concurrency=1 tests/home-page.test.js tests/result-page.test.js tests/table-page.test.js",
+    "test:rules": "node --test --test-concurrency=1 tests/rules.test.js",
+    "test:smoke": "node --test --test-concurrency=1 tests/smoke.test.js",
+    "test:view": "node --test --test-concurrency=1 tests/result-view.test.js tests/table-view-status.test.js tests/table-view.test.js"
+  }
+}

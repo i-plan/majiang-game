@@ -2,9 +2,10 @@
   <button
     wx:for="{{actions}}"
     wx:key="index"
-    class="action-btn"
+    class="action-btn {{disabled ? 'action-btn-disabled' : ''}}"
     data-index="{{index}}"
     bindtap="handleTap"
+    disabled="{{disabled}}"
   >
     {{item.label}}
   </button>

@@ -3,11 +3,19 @@
     <view class="seat-name">{{seat.displayName}}</view>
     <view class="seat-badges">
       <text class="pill">{{seat.windLabel}}</text>
+      <text wx:if="{{seat.specialStateLabel}}" class="pill">{{seat.specialStateLabel}}</text>
       <text wx:if="{{seat.isDealer}}" class="dealer-badge">庄</text>
     </view>
   </view>
 
-  <view class="seat-line">手牌 {{seat.concealedCount}} 张</view>
+  <view class="seat-meta-row">
+    <text class="seat-line">手牌 {{seat.concealedCount}} 张</text>
+    <text class="seat-score">{{seat.scoreText}}</text>
+  </view>
+
+  <view wx:if="{{seat.pendingDeltaText}}" class="seat-delta {{seat.pendingDelta > 0 ? 'seat-delta-positive' : seat.pendingDelta < 0 ? 'seat-delta-negative' : ''}}">
+    本局 {{seat.pendingDeltaText}}
+  </view>
 
   <view wx:if="{{seat.meldTexts.length}}" class="seat-group">
     <text class="seat-group-title">副露</text>

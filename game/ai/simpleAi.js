@@ -81,6 +81,11 @@ function scoreHandCodes(codes) {
 }
 
 function chooseTurnAction(state, seatId, actions) {
+  const youJinAction = actions.find((action) => action.type === 'youJin')
+  if (youJinAction) {
+    return youJinAction
+  }
+
   const huAction = actions.find((action) => action.type === 'hu')
   if (huAction) {
     return huAction
@@ -144,6 +149,11 @@ function chooseReactionAction(state, seatId, actions) {
 
 function chooseDiscardTile(state, seatId) {
   const seat = state.seats[seatId]
+
+  if (state.turnStage === 'afterDraw' && state.lastDrawTile && (seat.youJinLevel > 0 || seat.tianTingActive)) {
+    return state.lastDrawTile.id
+  }
+
   const candidates = seat.concealedTiles.map((tile) => {
     const remainingCodes = seat.concealedTiles
       .filter((candidate) => candidate.id !== tile.id)

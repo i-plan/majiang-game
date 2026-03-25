@@ -14,6 +14,9 @@ const HUMAN_SEAT = 0
 
 let state = null
 const listeners = []
+let matchSettings = {
+  bankerBase: rules.match.defaultBankerBase
+}
 
 function notify() {
   listeners.slice().forEach((listener) => listener())
@@ -45,10 +48,42 @@ function subscribe(listener) {
   }
 }
 
-function startNewRound() {
-  state = startRound(rules)
+function normalizeBankerBase(value) {
+  const numericValue = Number(value)
+  return rules.match.bankerBaseOptions.indexOf(numericValue) >= 0 ? numericValue : rules.match.defaultBankerBase
+}
+
+function startNewMatch(options) {
+  matchSettings = {
+    bankerBase: normalizeBankerBase(options && options.bankerBase)
+  }
+
+  state = startRound(rules, {
+    bankerBase: matchSettings.bankerBase,
+    dealerSeat: rules.fixedDealerSeat || 0,
+    roundIndex: 1
+  })
   emitChange()
   return getSnapshot()
+}
+
+function startNextRound() {
+  if (!state || !state.result || state.result.matchEnded) {
+    return startNewMatch(matchSettings)
+  }
+
+  state = startRound(rules, {
+    bankerBase: state.bankerBase,
+    dealerSeat: state.result.nextDealerSeat,
+    roundIndex: state.roundIndex + 1,
+    initialScores: state.result.nextScores
+  })
+  emitChange()
+  return getSnapshot()
+}
+
+function startNewRound() {
+  return startNewMatch(matchSettings)
 }
 
 function hasState() {
@@ -159,7 +194,11 @@ function advanceAi() {
       break
     }
 
-    discardTile(state, state.activeSeat, discardTileId)
+    const discarded = discardTile(state, state.activeSeat, discardTileId)
+    if (!discarded) {
+      break
+    }
+
     changed = true
   }
 
@@ -178,7 +217,9 @@ module.exports = {
   getSnapshot,
   hasState,
   passHumanReaction,
+  startNewMatch,
   startNewRound,
+  startNextRound,
   subscribe,
   takeHumanReaction,
   takeHumanSelfAction

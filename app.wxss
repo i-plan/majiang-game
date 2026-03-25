@@ -1,9 +1,7 @@
-@import "./styles/variables.wxss";
-
 page {
   min-height: 100%;
-  background: var(--page-bg);
-  color: var(--text-primary);
+  background: linear-gradient(180deg, #0d4b3b 0%, #0a2e26 100%);
+  color: #f7f0dc;
   font-size: 28rpx;
 }
 
@@ -19,8 +17,8 @@ button {
 }
 
 .card {
-  background: var(--card-bg);
-  border: 2rpx solid var(--card-border);
+  background: rgba(16, 51, 41, 0.88);
+  border: 2rpx solid rgba(255, 255, 255, 0.08);
   border-radius: 24rpx;
   box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.16);
 }
@@ -36,8 +34,8 @@ button {
   justify-content: center;
   padding: 8rpx 18rpx;
   border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(247, 240, 220, 0.86);
   font-size: 22rpx;
 }
 
@@ -60,6 +58,10 @@ button {
   border-radius: 18rpx;
   border: 2rpx solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary);
+  color: #f7f0dc;
   font-size: 28rpx;
+}
+
+.page-btn-disabled {
+  opacity: 0.56;
 }

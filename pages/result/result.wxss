@@ -5,6 +5,7 @@
 }
 
 .result-summary,
+.detail-card,
 .score-card,
 .seat-card,
 .logs-card {
@@ -29,10 +30,27 @@
   margin-top: 18rpx;
 }
 
+.match-end-tip {
+  margin-top: 18rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 16rpx;
+  background: rgba(240, 194, 97, 0.14);
+  color: #f5d58b;
+  line-height: 1.6;
+}
+
+.detail-text,
+.detail-line {
+  margin-top: 12rpx;
+  line-height: 1.7;
+  color: rgba(247, 240, 220, 0.82);
+}
+
 .score-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 20rpx;
   padding: 18rpx 0;
   border-bottom: 2rpx solid rgba(255, 255, 255, 0.06);
 }
@@ -49,15 +67,39 @@
   color: #ff9d9d;
 }
 
+.score-main {
+  flex: 1;
+}
+
+.score-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
 .score-name {
   font-size: 30rpx;
   font-weight: 700;
 }
 
 .score-wind {
-  margin-top: 6rpx;
   font-size: 22rpx;
   color: rgba(247, 240, 220, 0.6);
+}
+
+.dealer-pill {
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(240, 194, 97, 0.18);
+  color: #f5d58b;
+  font-size: 20rpx;
+}
+
+.score-meta {
+  margin-top: 8rpx;
+  line-height: 1.6;
+  color: rgba(247, 240, 220, 0.72);
 }
 
 .score-delta {

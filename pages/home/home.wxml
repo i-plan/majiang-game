@@ -1,22 +1,38 @@
 <view class="page-shell home-page">
   <view class="hero card">
     <view class="hero-title">泉州麻将</view>
-    <view class="hero-subtitle">原生微信小程序 MVP</view>
+    <view class="hero-subtitle">原生微信小程序 · 本地课分玩法</view>
 
     <view class="tag-row">
-      <text class="pill">单机演示</text>
-      <text class="pill">含花牌</text>
+      <text class="pill">144 张</text>
+      <text class="pill">庄 17 / 闲 16</text>
+      <text class="pill">开金百搭</text>
       <text class="pill">吃碰杠胡</text>
     </view>
 
-    <button class="primary-btn" bindtap="startGame">开始一局</button>
+    <view class="selector-block">
+      <view class="section-title">选择庄底</view>
+      <view class="option-row">
+        <view
+          wx:for="{{bankerBaseOptions}}"
+          wx:key="value"
+          class="option-chip {{item.value === selectedBankerBase ? 'option-chip-active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="selectBankerBase"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </view>
+
+    <button class="primary-btn {{starting ? 'page-btn-disabled' : ''}}" bindtap="startGame" disabled="{{starting}}">开始对局</button>
   </view>
 
   <view class="intro card">
-    <view class="section-title">首版内容</view>
-    <view class="intro-item">1. 1 名玩家 + 3 个 AI</view>
-    <view class="intro-item">2. 支持补花、吃、碰、明杠、暗杠、胡牌</view>
-    <view class="intro-item">3. 结算先区分自摸 / 点炮 / 流局</view>
-    <view class="intro-item">4. 后续可继续补泉州地方番型与计分</view>
+    <view class="section-title">当前已接入</view>
+    <view class="intro-item">1. 1 名玩家 + 3 个 AI，本地单机场景</view>
+    <view class="intro-item">2. 开局选庄底 10 / 2，按局续分</view>
+    <view class="intro-item">3. 计入花牌、金牌、暗刻、碰牌、各类杠和八花</view>
+    <view class="intro-item">4. 结果页展示主结算与未胡三家番差</view>
   </view>
 </view>
