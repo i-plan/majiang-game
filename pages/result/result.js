@@ -3,10 +3,13 @@ const { buildResultView } = require('../../game/selectors/resultView')
 
 Page({
   data: {
-    view: null
+    view: null,
+    navigating: false
   },
 
   onShow() {
+    this._navigating = false
+
     const snapshot = gameSession.getSnapshot()
 
     if (!snapshot || !snapshot.result) {
@@ -17,20 +20,50 @@ Page({
     }
 
     this.setData({
-      view: buildResultView(snapshot)
+      view: buildResultView(snapshot),
+      navigating: false
     })
   },
 
   onReplay() {
-    gameSession.startNewRound()
+    if (this._navigating) {
+      return
+    }
+
+    this._navigating = true
+    this.setData({
+      navigating: true
+    })
+
     wx.redirectTo({
-      url: '/pages/table/table'
+      url: '/pages/table/table?replay=1',
+      fail: () => {
+        this._navigating = false
+        this.setData({
+          navigating: false
+        })
+      }
     })
   },
 
   onBackHome() {
+    if (this._navigating) {
+      return
+    }
+
+    this._navigating = true
+    this.setData({
+      navigating: true
+    })
+
     wx.reLaunch({
-      url: '/pages/home/home'
+      url: '/pages/home/home',
+      fail: () => {
+        this._navigating = false
+        this.setData({
+          navigating: false
+        })
+      }
     })
   }
 })

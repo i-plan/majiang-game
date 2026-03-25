@@ -1,12 +1,21 @@
 <view wx:if="{{view}}" class="page-shell table-page">
   <view class="top-bar card">
     <view class="top-item">
+      <text class="top-label">局数</text>
+      <text class="top-value">{{view.roundLabel}}</text>
+    </view>
+    <view class="top-item">
       <text class="top-label">庄家</text>
       <text class="top-value">{{view.dealerLabel}}</text>
     </view>
     <view class="top-item">
-      <text class="top-label">当前</text>
-      <text class="top-value">{{view.activeLabel}}</text>
+      <text class="top-label">庄底</text>
+      <text class="top-value">{{view.bankerBaseLabel}}</text>
+    </view>
+    <view class="top-item">
+      <text class="top-label">金牌</text>
+      <text class="top-value">{{view.goldTileLabel}}</text>
+      <text wx:if="{{view.goldDiceLabel}}" class="top-subvalue">{{view.goldDiceLabel}}</text>
     </view>
     <view class="top-item">
       <text class="top-label">剩余牌</text>
@@ -45,8 +54,10 @@
       <view class="human-name-wrap">
         <text class="human-name">{{view.bottomSeat.displayName}}</text>
         <text class="pill">{{view.bottomSeat.windLabel}}</text>
+        <text wx:if="{{view.humanSpecialStateLabel}}" class="pill">{{view.humanSpecialStateLabel}}</text>
         <text wx:if="{{view.bottomSeat.isDealer}}" class="dealer-badge">庄</text>
       </view>
+      <text class="human-score">{{view.humanScoreText}}</text>
     </view>
 
     <view wx:if="{{view.humanMeldTexts.length}}" class="meta-group">
@@ -67,16 +78,16 @@
       <text class="meta-title">手牌</text>
       <scroll-view scroll-x="true" class="hand-scroll">
         <view class="hand-list">
-          <tile wx:for="{{view.humanHand}}" wx:key="id" tile="{{item}}" bind:tiletap="onTileTap" />
+          <tile wx:for="{{view.humanHand}}" wx:key="id" tile="{{item}}" disabled="{{acting || item.disabled}}" bind:tiletap="onTileTap" />
         </view>
       </scroll-view>
     </view>
 
     <view class="hand-actions">
-      <button class="secondary-btn discard-btn" bindtap="onDiscardTap" disabled="{{view.discardDisabled || !view.canDiscard}}">
+      <button class="secondary-btn discard-btn {{acting ? 'page-btn-disabled' : ''}}" bindtap="onDiscardTap" disabled="{{acting || view.discardDisabled || !view.canDiscard}}">
         {{view.discardButtonText}}
       </button>
-      <action-panel actions="{{view.availableActions}}" bind:actiontap="onActionTap" />
+      <action-panel actions="{{view.availableActions}}" disabled="{{acting}}" bind:actiontap="onActionTap" />
     </view>
   </view>
 </view>

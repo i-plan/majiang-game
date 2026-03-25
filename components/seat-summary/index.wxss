@@ -35,10 +35,37 @@
   font-size: 22rpx;
 }
 
+.seat-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
 .seat-line {
-  margin-bottom: 12rpx;
   color: rgba(247, 240, 220, 0.72);
   font-size: 24rpx;
+}
+
+.seat-score {
+  color: #f5d58b;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.seat-delta {
+  margin-bottom: 12rpx;
+  font-size: 22rpx;
+  color: rgba(247, 240, 220, 0.68);
+}
+
+.seat-delta-positive {
+  color: #90df9d;
+}
+
+.seat-delta-negative {
+  color: #ff9d9d;
 }
 
 .seat-group {

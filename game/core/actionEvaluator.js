@@ -1,5 +1,5 @@
 const { getTileLabel, getTileMeta } = require('../config/tileCatalog')
-const { canHuForSeat } = require('./winChecker')
+const { evaluateWin, getYouJinEntryCodes } = require('./winChecker')
 
 function nextSeatId(state, seatId) {
   return (seatId + 1) % state.seats.length
@@ -16,9 +16,25 @@ function getPriority(state, type) {
   return state.rules.claimPriority[type] || 0
 }
 
+function getActiveYouJinSeat(state) {
+  if (!state || !state.seats) {
+    return null
+  }
+
+  return state.seats.find((seat) => seat.youJinLevel > 0) || null
+}
+
 function buildActionLabel(action) {
   if (action.type === 'hu') {
-    return '胡'
+    return action.winInfo && action.winInfo.patternLabel ? action.winInfo.patternLabel : '胡'
+  }
+
+  if (action.type === 'youJin') {
+    if (action.mode === 'upgrade') {
+      return action.nextLevel === 3 ? '三游' : '双游'
+    }
+
+    return `游金 打 ${getTileLabel(action.code)}`
   }
 
   if (action.type === 'peng') {
@@ -56,9 +72,30 @@ function sortActions(actions) {
 
 function createAction(state, action) {
   return Object.assign({}, action, {
-    priority: getPriority(state, action.type),
+    priority: typeof action.priority === 'number' ? action.priority : getPriority(state, action.type),
     label: buildActionLabel(action)
   })
+}
+
+function isTripleYouJinHuBlocked(state, seatId) {
+  const activeYouJinSeat = getActiveYouJinSeat(state)
+
+  return Boolean(
+    activeYouJinSeat &&
+    activeYouJinSeat.seatId !== seatId &&
+    activeYouJinSeat.youJinLevel >= 3 &&
+    state.lastDrawSource !== 'supplement'
+  )
+}
+
+function isReactionHuBlockedByYouJin(state, seatId) {
+  const activeYouJinSeat = getActiveYouJinSeat(state)
+
+  return Boolean(
+    activeYouJinSeat &&
+    activeYouJinSeat.seatId !== seatId &&
+    activeYouJinSeat.youJinLevel >= 2
+  )
 }
 
 function getSelfActions(state, seatId) {
@@ -73,13 +110,43 @@ function getSelfActions(state, seatId) {
   const seat = state.seats[seatId]
   const actions = []
   const counts = buildCountMap(seat.concealedTiles)
+  const winInfo = evaluateWin(state, seat)
 
-  if (canHuForSeat(seat)) {
+  if (winInfo.canHu && !isTripleYouJinHuBlocked(state, seatId)) {
     actions.push(createAction(state, {
       type: 'hu',
       seatId,
-      source: 'self'
+      source: 'self',
+      winInfo,
+      priority: 300
     }))
+  }
+
+  if (seat.youJinLevel > 0) {
+    if (seat.youJinLevel < 3 && state.lastDrawTile && state.lastDrawTile.code === state.goldTileCode) {
+      actions.push(createAction(state, {
+        type: 'youJin',
+        seatId,
+        mode: 'upgrade',
+        nextLevel: seat.youJinLevel + 1,
+        code: state.goldTileCode,
+        priority: 250
+      }))
+    }
+
+    return sortActions(actions)
+  }
+
+  if (winInfo.canHu) {
+    getYouJinEntryCodes(state, seat).forEach((code) => {
+      actions.push(createAction(state, {
+        type: 'youJin',
+        seatId,
+        mode: 'enter',
+        code,
+        priority: 240
+      }))
+    })
   }
 
   if (state.rules.allowConcealedGang) {
@@ -157,16 +224,23 @@ function getChiActions(state, seatId, discardTile, fromSeat) {
 
 function getReactionActionsForSeat(state, seatId, discardTile, fromSeat) {
   const seat = state.seats[seatId]
+
+  if (seat.youJinLevel > 0) {
+    return []
+  }
+
   const counts = buildCountMap(seat.concealedTiles)
   const actions = []
+  const winInfo = evaluateWin(state, seat, discardTile)
 
-  if (canHuForSeat(seat, discardTile)) {
+  if (winInfo.canHu && !isReactionHuBlockedByYouJin(state, seatId)) {
     actions.push(createAction(state, {
       type: 'hu',
       seatId,
       fromSeat,
       source: 'discard',
-      code: discardTile.code
+      code: discardTile.code,
+      winInfo
     }))
   }
 
@@ -283,7 +357,7 @@ function isSameAction(left, right) {
     return false
   }
 
-  if (left.type !== right.type || left.mode !== right.mode || left.code !== right.code) {
+  if (left.type !== right.type || left.mode !== right.mode || left.code !== right.code || left.nextLevel !== right.nextLevel) {
     return false
   }
 

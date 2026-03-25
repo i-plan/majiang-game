@@ -6,7 +6,7 @@
 
 .top-bar {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12rpx;
   padding: 18rpx 22rpx;
 }
@@ -25,6 +25,11 @@
 .top-value {
   font-size: 30rpx;
   font-weight: 700;
+}
+
+.top-subvalue {
+  font-size: 20rpx;
+  color: rgba(247, 240, 220, 0.58);
 }
 
 .status-card {
@@ -79,6 +84,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12rpx;
 }
 
 .human-name-wrap {
@@ -90,6 +96,12 @@
 
 .human-name {
   font-size: 32rpx;
+  font-weight: 700;
+}
+
+.human-score {
+  color: #f5d58b;
+  font-size: 28rpx;
   font-weight: 700;
 }
 
