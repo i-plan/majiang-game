@@ -1,11 +1,13 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
+const fs = require('node:fs')
 const path = require('node:path')
 
 const ROOT = path.resolve(__dirname, '..')
 const gameSession = require(path.join(ROOT, 'game', 'runtime', 'gameSession'))
 
 const homePagePath = path.join(ROOT, 'pages', 'home', 'home.js')
+const homePageWxmlPath = path.join(ROOT, 'pages', 'home', 'home.wxml')
 
 function loadHomePageDefinition() {
   const resolvedHomePagePath = require.resolve(homePagePath)
@@ -46,6 +48,10 @@ function createPageInstance() {
   })
 
   return page
+}
+
+function readHomeTemplate() {
+  return fs.readFileSync(homePageWxmlPath, 'utf8')
 }
 
 test('home page ignores repeated start taps while a navigation is already in flight', () => {
@@ -125,4 +131,14 @@ test('home page onShow clears a stale starting state after returning to the page
 
   assert.equal(page.data.starting, false)
   assert.equal(page._starting, false)
+})
+
+test('home page template binds banker-base options and start button state', () => {
+  const template = readHomeTemplate()
+
+  assert.match(template, /wx:for="\{\{bankerBaseOptions\}\}"/)
+  assert.match(template, /class="option-chip \{\{item\.value === selectedBankerBase \? 'option-chip-active' : ''\}\}"/)
+  assert.match(template, /data-value="\{\{item\.value\}\}"/)
+  assert.match(template, /bindtap="selectBankerBase"/)
+  assert.match(template, /bindtap="startGame" disabled="\{\{starting\}\}">开始对局<\/button>/)
 })
