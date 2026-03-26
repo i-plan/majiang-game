@@ -176,6 +176,38 @@ test('result page returns to home when shown without a settled snapshot', () => 
   }
 })
 
+test('result page returns to home when shown with a non-null but unsettled snapshot', () => {
+  const page = createPageInstance()
+  const originalGetSnapshot = gameSession.getSnapshot
+  const originalWx = global.wx
+
+  let relaunchedUrl = ''
+
+  gameSession.getSnapshot = () => ({
+    seats: [],
+    log: []
+  })
+  global.wx = {
+    redirectTo() {},
+    reLaunch({ url }) {
+      relaunchedUrl = url
+    }
+  }
+
+  try {
+    page.data.navigating = true
+    page._navigating = true
+
+    page.onShow()
+
+    assert.equal(relaunchedUrl, '/pages/home/home')
+    assert.equal(page._navigating, false)
+  } finally {
+    gameSession.getSnapshot = originalGetSnapshot
+    global.wx = originalWx
+  }
+})
+
 test('result page loads a real discard-win snapshot into page view data', () => {
   const page = createPageInstance()
   const originalGetSnapshot = gameSession.getSnapshot
@@ -355,6 +387,48 @@ test('result page ignores repeated home taps while a navigation is already in fl
     assert.equal(relaunchedUrl, '/pages/home/home')
     assert.equal(page.data.navigating, true)
     assert.equal(page._navigating, true)
+  } finally {
+    global.wx = originalWx
+  }
+})
+
+test('result page blocks mixed replay and home taps once either navigation starts', () => {
+  const replayPage = createPageInstance()
+  const homePage = createPageInstance()
+  const originalWx = global.wx
+
+  let redirectCalls = 0
+  let reLaunchCalls = 0
+  let redirectedUrl = ''
+  let relaunchedUrl = ''
+
+  global.wx = {
+    redirectTo({ url }) {
+      redirectCalls += 1
+      redirectedUrl = url
+    },
+    reLaunch({ url }) {
+      reLaunchCalls += 1
+      relaunchedUrl = url
+    }
+  }
+
+  try {
+    replayPage.onReplay()
+    replayPage.onBackHome()
+
+    assert.equal(redirectCalls, 1)
+    assert.equal(reLaunchCalls, 0)
+    assert.equal(redirectedUrl, '/pages/table/table?replay=1')
+    assert.equal(replayPage._navigating, true)
+
+    homePage.onBackHome()
+    homePage.onReplay()
+
+    assert.equal(redirectCalls, 1)
+    assert.equal(reLaunchCalls, 1)
+    assert.equal(relaunchedUrl, '/pages/home/home')
+    assert.equal(homePage._navigating, true)
   } finally {
     global.wx = originalWx
   }

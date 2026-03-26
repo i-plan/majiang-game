@@ -152,3 +152,79 @@ test('startNextRound resets to a fresh match after matchEnded becomes true', () 
     restore()
   }
 })
+
+test('subscribe notifies listeners on emitted changes and stops after unsubscribe', () => {
+  const calls = []
+  const initialRound = createState({
+    roundIndex: 1,
+    dealerSeat: 0,
+    bankerBase: 10,
+    scores: [100, 100, 100, 100],
+    result: null
+  })
+  const endedRound = createState({
+    roundIndex: 1,
+    dealerSeat: 0,
+    bankerBase: 10,
+    scores: [95, 105, 100, 100],
+    result: {
+      matchEnded: false,
+      nextDealerSeat: 1,
+      nextScores: [90, 110, 100, 100]
+    }
+  })
+  const nextRound = createState({
+    roundIndex: 2,
+    dealerSeat: 1,
+    bankerBase: 10,
+    scores: [90, 110, 100, 100],
+    result: null
+  })
+  const freshMatch = createState({
+    roundIndex: 1,
+    dealerSeat: 0,
+    bankerBase: 10,
+    scores: [100, 100, 100, 100],
+    result: null
+  })
+  const { gameSession, restore } = loadGameSessionWithPatchedStartRound((rules, options) => {
+    calls.push(options)
+    if (calls.length === 1) {
+      return initialRound
+    }
+    if (calls.length === 2) {
+      return nextRound
+    }
+    return freshMatch
+  })
+
+  let notified = 0
+  const unsubscribe = gameSession.subscribe(() => {
+    notified += 1
+  })
+
+  try {
+    gameSession.startNewMatch({ bankerBase: 10 })
+
+    assert.equal(notified, 1)
+
+    endedRound.result = {
+      matchEnded: false,
+      nextDealerSeat: 1,
+      nextScores: [90, 110, 100, 100]
+    }
+    initialRound.result = endedRound.result
+    initialRound.seats = endedRound.seats
+
+    gameSession.startNextRound()
+
+    assert.equal(notified, 2)
+
+    unsubscribe()
+    gameSession.startNewRound()
+
+    assert.equal(notified, 2)
+  } finally {
+    restore()
+  }
+})
