@@ -1,5 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
+const fs = require('node:fs')
 const path = require('node:path')
 
 const ROOT = path.resolve(__dirname, '..')
@@ -8,6 +9,10 @@ const { startRound } = require(path.join(ROOT, 'game', 'core', 'stateMachine'))
 const gameSession = require(path.join(ROOT, 'game', 'runtime', 'gameSession'))
 
 const tablePagePath = path.join(ROOT, 'pages', 'table', 'table.js')
+const tablePageWxmlPath = path.join(ROOT, 'pages', 'table', 'table.wxml')
+const seatSummaryWxmlPath = path.join(ROOT, 'components', 'seat-summary', 'index.wxml')
+const actionPanelWxmlPath = path.join(ROOT, 'components', 'action-panel', 'index.wxml')
+const actionPanelPath = path.join(ROOT, 'components', 'action-panel', 'index.js')
 
 function loadTablePageDefinition() {
   const resolvedTablePagePath = require.resolve(tablePagePath)
@@ -49,6 +54,60 @@ function createPageInstance() {
   })
 
   return page
+}
+
+function readTableTemplate() {
+  return fs.readFileSync(tablePageWxmlPath, 'utf8')
+}
+
+function readSeatSummaryTemplate() {
+  return fs.readFileSync(seatSummaryWxmlPath, 'utf8')
+}
+
+function readActionPanelTemplate() {
+  return fs.readFileSync(actionPanelWxmlPath, 'utf8')
+}
+
+function loadActionPanelDefinition() {
+  const resolvedActionPanelPath = require.resolve(actionPanelPath)
+  delete require.cache[resolvedActionPanelPath]
+
+  const originalComponent = global.Component
+  let capturedDefinition = null
+
+  global.Component = (definition) => {
+    capturedDefinition = definition
+  }
+
+  try {
+    require(resolvedActionPanelPath)
+  } finally {
+    global.Component = originalComponent
+  }
+
+  return capturedDefinition
+}
+
+function createActionPanelInstance(properties) {
+  const definition = loadActionPanelDefinition()
+  const component = {
+    properties: Object.assign({
+      actions: [],
+      disabled: false
+    }, properties),
+    emittedEvents: [],
+    triggerEvent(name, detail) {
+      this.emittedEvents.push({ name, detail })
+    }
+  }
+
+  Object.keys(definition.methods).forEach((key) => {
+    if (typeof definition.methods[key] === 'function') {
+      component[key] = definition.methods[key].bind(component)
+    }
+  })
+
+  return component
 }
 
 test('table page ignores discard and action taps while acting', () => {
@@ -211,4 +270,120 @@ test('table page keeps the settled-state flow when replay is not requested', () 
     gameSession.getSnapshot = originalGetSnapshot
     gameSession.startNextRound = originalStartNextRound
   }
+})
+
+test('table page forwards the selected reaction action by index when multiple chi options are available', () => {
+  const page = createPageInstance()
+  const originalTakeHumanReaction = gameSession.takeHumanReaction
+
+  const actions = [
+    { type: 'chi', label: '吃 2万 3万' },
+    { type: 'chi', label: '吃 3万 5万' },
+    { type: 'chi', label: '吃 5万 6万' }
+  ]
+  let receivedAction = null
+
+  gameSession.takeHumanReaction = (action) => {
+    receivedAction = action
+    return true
+  }
+
+  try {
+    page.data = {
+      view: {
+        availableActions: actions,
+        promptType: 'reaction'
+      },
+      selectedTileId: 'tile-1',
+      acting: false
+    }
+
+    page.onActionTap({ detail: { index: 1 } })
+
+    assert.deepEqual(receivedAction, actions[1])
+    assert.equal(page.data.selectedTileId, '')
+    assert.equal(page.data.acting, true)
+  } finally {
+    gameSession.takeHumanReaction = originalTakeHumanReaction
+  }
+})
+
+test('action panel emits the tapped button index in order', () => {
+  const component = createActionPanelInstance({
+    actions: [
+      { label: '吃 2万 3万' },
+      { label: '吃 3万 5万' },
+      { label: '吃 5万 6万' }
+    ],
+    disabled: false
+  })
+
+  component.handleTap({
+    currentTarget: {
+      dataset: {
+        index: 1
+      }
+    }
+  })
+
+  assert.deepEqual(component.emittedEvents, [{
+    name: 'actiontap',
+    detail: {
+      index: 1
+    }
+  }])
+})
+
+test('action panel ignores taps while disabled', () => {
+  const component = createActionPanelInstance({
+    actions: [{ label: '过' }],
+    disabled: true
+  })
+
+  component.handleTap({
+    currentTarget: {
+      dataset: {
+        index: 0
+      }
+    }
+  })
+
+  assert.deepEqual(component.emittedEvents, [])
+})
+
+test('table page template binds top-bar, logs, hand, and action controls to table view fields', () => {
+  const template = readTableTemplate()
+
+  assert.match(template, /<text class="top-value">\{\{view\.roundLabel\}\}<\/text>/)
+  assert.match(template, /<text class="top-value">\{\{view\.dealerLabel\}\}<\/text>/)
+  assert.match(template, /<text class="top-value">\{\{view\.bankerBaseLabel\}\}<\/text>/)
+  assert.match(template, /<text class="top-value">\{\{view\.goldTileLabel\}\}<\/text>/)
+  assert.match(template, /<text wx:if="\{\{view\.goldDiceLabel\}\}" class="top-subvalue">\{\{view\.goldDiceLabel\}\}<\/text>/)
+  assert.match(template, /<view wx:for="\{\{view\.recentLogs\}\}" wx:key="id" class="log-item">\{\{item\.text\}\}<\/view>/)
+  assert.match(template, /<text wx:if="\{\{view\.humanSpecialStateLabel\}\}" class="pill">\{\{view\.humanSpecialStateLabel\}\}<\/text>/)
+  assert.match(template, /<tile wx:for="\{\{view\.humanHand\}\}" wx:key="id" tile="\{\{item\}\}" disabled="\{\{acting \|\| item\.disabled\}\}" bind:tiletap="onTileTap" \/>/)
+  assert.match(template, /bindtap="onDiscardTap" disabled="\{\{acting \|\| view\.discardDisabled \|\| !view\.canDiscard\}\}">/)
+  assert.match(template, /<action-panel actions="\{\{view\.availableActions\}\}" disabled="\{\{acting\}\}" bind:actiontap="onActionTap" \/>/)
+})
+
+test('seat summary template binds dealer, special state, pending delta, and fallback labels', () => {
+  const template = readSeatSummaryTemplate()
+
+  assert.match(template, /<text class="pill">\{\{seat\.windLabel\}\}<\/text>/)
+  assert.match(template, /<text wx:if="\{\{seat\.specialStateLabel\}\}" class="pill">\{\{seat\.specialStateLabel\}\}<\/text>/)
+  assert.match(template, /<text wx:if="\{\{seat\.isDealer\}\}" class="dealer-badge">庄<\/text>/)
+  assert.match(template, /<view wx:if="\{\{seat\.pendingDeltaText\}\}" class="seat-delta \{\{seat\.pendingDelta > 0 \? 'seat-delta-positive' : seat\.pendingDelta < 0 \? 'seat-delta-negative' : ''\}\}">/)
+  assert.match(template, /<text wx:if="\{\{!seat\.discardLabels\.length\}\}" class="empty-text">暂无<\/text>/)
+  assert.match(template, /<text wx:for="\{\{seat\.flowerLabels\}\}" wx:key="index" class="chip chip-flower">\{\{item\}\}<\/text>/)
+})
+
+test('action panel template binds action labels, indices, and disabled state', () => {
+  const template = readActionPanelTemplate()
+
+  assert.match(template, /<view wx:if="\{\{actions\.length\}\}" class="action-panel">/)
+  assert.match(template, /wx:for="\{\{actions\}\}"/)
+  assert.match(template, /data-index="\{\{index\}\}"/)
+  assert.match(template, /bindtap="handleTap"/)
+  assert.match(template, /disabled="\{\{disabled\}\}"/)
+  assert.match(template, /\{\{item\.label\}\}/)
 })

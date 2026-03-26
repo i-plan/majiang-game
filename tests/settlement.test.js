@@ -4,7 +4,7 @@ const path = require('node:path')
 
 const ROOT = path.resolve(__dirname, '..')
 const rules = require(path.join(ROOT, 'game', 'config', 'rules', 'mvp'))
-const { buildRoundResult } = require(path.join(ROOT, 'game', 'core', 'settlement'))
+const { buildRoundResult, buildSeatFanBreakdown } = require(path.join(ROOT, 'game', 'core', 'settlement'))
 
 const WINDS = ['东', '南', '西', '北']
 
@@ -18,6 +18,23 @@ function createTile(code, label, index) {
 
 function createFlowerTiles(count, prefix) {
   return new Array(count).fill(null).map((_, index) => createTile('plum', '梅', `${prefix}-${index}`))
+}
+
+function createTiles(specs, prefix) {
+  return specs.map((spec, index) => createTile(spec.code, spec.label, `${prefix}-${index}`))
+}
+
+function createAllFlowerTiles(prefix) {
+  return createTiles([
+    { code: 'spring', label: '春' },
+    { code: 'summer', label: '夏' },
+    { code: 'autumn', label: '秋' },
+    { code: 'winter', label: '冬' },
+    { code: 'plum', label: '梅' },
+    { code: 'orchid', label: '兰' },
+    { code: 'flower-bamboo', label: '竹' },
+    { code: 'chrysanthemum', label: '菊' }
+  ], prefix)
 }
 
 function createSeat(seatId, score, options) {
@@ -174,4 +191,162 @@ test('buildRoundResult marks draw games as match ended when any score is already
   assert.deepEqual(result.nextScores, [100, 0, 120, 80])
   assert.equal(result.nextDealerSeat, 2)
   assert.equal(result.mainWinType.id, 'drawGame')
+})
+
+test('buildSeatFanBreakdown stacks gold, flower, triplet, peng, and gang fans from all sources', () => {
+  const state = createState({
+    goldTileCode: 'white',
+    goldTileLabel: '白',
+    seats: []
+  })
+  const seat = createSeat(0, 100, {
+    concealedTiles: createTiles([
+      { code: 'east', label: '东' },
+      { code: 'east', label: '东' },
+      { code: 'east', label: '东' },
+      { code: 'wan-1', label: '1万' },
+      { code: 'wan-1', label: '1万' },
+      { code: 'wan-1', label: '1万' },
+      { code: 'white', label: '白' },
+      { code: 'bamboo-5', label: '5条' }
+    ], 'concealed'),
+    melds: [
+      {
+        type: 'peng',
+        code: 'red',
+        tiles: createTiles([
+          { code: 'red', label: '中' },
+          { code: 'red', label: '中' },
+          { code: 'red', label: '中' }
+        ], 'peng')
+      },
+      {
+        type: 'gang',
+        gangType: 'add',
+        code: 'bamboo-4',
+        tiles: createTiles([
+          { code: 'bamboo-4', label: '4条' },
+          { code: 'bamboo-4', label: '4条' },
+          { code: 'bamboo-4', label: '4条' },
+          { code: 'bamboo-4', label: '4条' }
+        ], 'add-gang')
+      },
+      {
+        type: 'gang',
+        gangType: 'concealed',
+        code: 'south',
+        tiles: createTiles([
+          { code: 'south', label: '南' },
+          { code: 'south', label: '南' },
+          { code: 'south', label: '南' },
+          { code: 'south', label: '南' }
+        ], 'concealed-gang')
+      },
+      {
+        type: 'gang',
+        gangType: 'melded',
+        code: 'tong-7',
+        tiles: createTiles([
+          { code: 'tong-7', label: '7筒' },
+          { code: 'tong-7', label: '7筒' },
+          { code: 'tong-7', label: '7筒' },
+          { code: 'tong-7', label: '7筒' }
+        ], 'melded-gang')
+      }
+    ],
+    flowers: createAllFlowerTiles('flowers')
+  })
+
+  const fanDetail = buildSeatFanBreakdown(state, seat, createTile('white', '白', 'winning'))
+
+  assert.equal(fanDetail.totalFan, 53)
+  assert.equal(fanDetail.goldCount, 2)
+  assert.equal(fanDetail.flowerCount, 8)
+  assert.deepEqual(
+    fanDetail.items.map((item) => ({ label: item.label, total: item.total })),
+    [
+      { label: '金牌', total: 2 },
+      { label: '花牌', total: 8 },
+      { label: '春夏秋冬', total: 8 },
+      { label: '梅兰竹菊', total: 8 },
+      { label: '八花齐', total: 16 },
+      { label: '字牌暗刻', total: 2 },
+      { label: '暗刻', total: 1 },
+      { label: '字牌碰牌', total: 1 },
+      { label: '补杠', total: 1 },
+      { label: '字牌暗杠', total: 4 },
+      { label: '明杠', total: 2 }
+    ]
+  )
+})
+
+test('buildRoundResult keeps ordinary selfDraw, zero pairwise transfers, and match end when a loser reaches zero', () => {
+  const state = createState({
+    bankerBase: 2,
+    dealerSeat: 0,
+    discardCount: 3,
+    roundIndex: 8,
+    seats: [
+      createSeat(0, 100),
+      createSeat(1, 4),
+      createSeat(2, 100),
+      createSeat(3, 100)
+    ]
+  })
+
+  const result = buildRoundResult(state, {
+    type: 'selfDraw',
+    winnerSeat: 2,
+    winningTile: createTile('tong-2', '2筒', 'self-draw')
+  })
+
+  assert.equal(result.typeLabel, '自摸')
+  assert.equal(result.mainWinType.id, 'selfDraw')
+  assert.equal(result.mainSettlement.share, 4)
+  assert.equal(result.nextDealerSeat, 2)
+  assert.equal(result.matchEnded, true)
+  assert.deepEqual(result.pairwiseTransfers, [])
+  assert.match(result.summaryText, /番差为 0/)
+  assert.deepEqual(result.deltas, [-4, -4, 12, -4])
+  assert.deepEqual(result.nextScores, [96, 0, 112, 96])
+})
+
+test('buildRoundResult keeps special self-draw win types ahead of the tianHu fallback', () => {
+  const cases = [
+    { patternId: 'threeGoldDown', expectedId: 'threeGoldDown', expectedLabel: '三金倒', expectedMultiplier: 3 },
+    { patternId: 'tianTing', expectedId: 'tianTing', expectedLabel: '天听', expectedMultiplier: 4 },
+    { patternId: 'youJin', expectedId: 'youJin', expectedLabel: '游金', expectedMultiplier: 4 },
+    { patternId: 'doubleYouJin', expectedId: 'doubleYouJin', expectedLabel: '双游', expectedMultiplier: 8 },
+    { patternId: 'tripleYouJin', expectedId: 'tripleYouJin', expectedLabel: '三游', expectedMultiplier: 16 }
+  ]
+
+  cases.forEach(({ patternId, expectedId, expectedLabel, expectedMultiplier }) => {
+    const state = createState({
+      bankerBase: 2,
+      dealerSeat: 0,
+      discardCount: 0,
+      roundIndex: 9,
+      seats: [
+        createSeat(0, 100),
+        createSeat(1, 100),
+        createSeat(2, 100),
+        createSeat(3, 100)
+      ]
+    })
+
+    const result = buildRoundResult(state, {
+      type: 'selfDraw',
+      winnerSeat: 0,
+      winningTile: createTile('wan-1', '1万', `special-${patternId}`),
+      winInfo: {
+        patternId
+      }
+    })
+
+    assert.equal(result.mainWinType.id, expectedId)
+    assert.equal(result.mainWinType.label, expectedLabel)
+    assert.equal(result.mainWinType.multiplier, expectedMultiplier)
+    assert.equal(result.mainSettlement.share, 2 * expectedMultiplier)
+    assert.notEqual(result.mainWinType.id, 'tianHu')
+  })
 })
