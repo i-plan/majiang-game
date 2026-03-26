@@ -133,6 +133,69 @@ test('home page onShow clears a stale starting state after returning to the page
   assert.equal(page._starting, false)
 })
 
+test('home page selectBankerBase updates the selected banker base and ignores taps while starting', () => {
+  const page = createPageInstance()
+
+  page.selectBankerBase({
+    currentTarget: {
+      dataset: {
+        value: 20
+      }
+    }
+  })
+
+  assert.equal(page.data.selectedBankerBase, 20)
+
+  page._starting = true
+  page.selectBankerBase({
+    currentTarget: {
+      dataset: {
+        value: 5
+      }
+    }
+  })
+
+  assert.equal(page.data.selectedBankerBase, 20)
+})
+
+test('home page starts a new match with the banker base chosen through the selection handler', () => {
+  const page = createPageInstance()
+  const originalStartNewMatch = gameSession.startNewMatch
+  const originalWx = global.wx
+
+  const matchCalls = []
+  let navigatedUrl = ''
+
+  gameSession.startNewMatch = (options) => {
+    matchCalls.push(options)
+  }
+  global.wx = {
+    navigateTo({ url }) {
+      navigatedUrl = url
+    }
+  }
+
+  try {
+    page.selectBankerBase({
+      currentTarget: {
+        dataset: {
+          value: 15
+        }
+      }
+    })
+
+    page.startGame()
+
+    assert.deepEqual(matchCalls, [{ bankerBase: 15 }])
+    assert.equal(navigatedUrl, '/pages/table/table')
+    assert.equal(page.data.starting, true)
+    assert.equal(page._starting, true)
+  } finally {
+    gameSession.startNewMatch = originalStartNewMatch
+    global.wx = originalWx
+  }
+})
+
 test('home page template binds banker-base options and start button state', () => {
   const template = readHomeTemplate()
 
