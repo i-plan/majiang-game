@@ -2,11 +2,11 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
 
-const ROOT = path.resolve(__dirname, '..')
-const actionEvaluatorPath = path.join(ROOT, 'game', 'core', 'actionEvaluator')
-const simpleAiPath = path.join(ROOT, 'game', 'ai', 'simpleAi')
-const stateMachinePath = path.join(ROOT, 'game', 'core', 'stateMachine')
-const gameSessionPath = path.join(ROOT, 'game', 'runtime', 'gameSession')
+const ROOT = path.resolve(__dirname, '../../..')
+const actionEvaluatorPath = path.join(ROOT, 'minigame', 'game', 'core', 'actionEvaluator')
+const simpleAiPath = path.join(ROOT, 'minigame', 'game', 'ai', 'simpleAi')
+const stateMachinePath = path.join(ROOT, 'minigame', 'game', 'core', 'stateMachine')
+const gameSessionPath = path.join(ROOT, 'minigame', 'game', 'runtime', 'gameSession')
 
 function createSeat(seatId, score) {
   return {

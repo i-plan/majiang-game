@@ -2,8 +2,8 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
 
-const ROOT = path.resolve(__dirname, '..')
-const simpleAi = require(path.join(ROOT, 'game', 'ai', 'simpleAi'))
+const ROOT = path.resolve(__dirname, '../../..')
+const simpleAi = require(path.join(ROOT, 'minigame', 'game', 'ai', 'simpleAi'))
 
 function withMockedRandom(value, run) {
   const originalRandom = Math.random

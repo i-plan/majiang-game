@@ -2,11 +2,11 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
 
-const ROOT = path.resolve(__dirname, '..')
-const rules = require(path.join(ROOT, 'game', 'config', 'rules', 'mvp'))
-const session = require(path.join(ROOT, 'game', 'runtime', 'gameSession'))
-const simpleAi = require(path.join(ROOT, 'game', 'ai', 'simpleAi'))
-const { getSelfActions } = require(path.join(ROOT, 'game', 'core', 'actionEvaluator'))
+const ROOT = path.resolve(__dirname, '../../..')
+const rules = require(path.join(ROOT, 'minigame', 'game', 'config', 'rules', 'mvp'))
+const session = require(path.join(ROOT, 'minigame', 'game', 'runtime', 'gameSession'))
+const simpleAi = require(path.join(ROOT, 'minigame', 'game', 'ai', 'simpleAi'))
+const { getSelfActions } = require(path.join(ROOT, 'minigame', 'game', 'core', 'actionEvaluator'))
 
 function autoPlayUntilRoundEnds(options) {
   session.startNewMatch(options)

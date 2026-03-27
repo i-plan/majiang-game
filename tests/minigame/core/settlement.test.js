@@ -2,9 +2,9 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
 
-const ROOT = path.resolve(__dirname, '..')
-const rules = require(path.join(ROOT, 'game', 'config', 'rules', 'mvp'))
-const { buildRoundResult, buildSeatFanBreakdown } = require(path.join(ROOT, 'game', 'core', 'settlement'))
+const ROOT = path.resolve(__dirname, '../../..')
+const rules = require(path.join(ROOT, 'minigame', 'game', 'config', 'rules', 'mvp'))
+const { buildRoundResult, buildSeatFanBreakdown } = require(path.join(ROOT, 'minigame', 'game', 'core', 'settlement'))
 
 const WINDS = ['东', '南', '西', '北']
 

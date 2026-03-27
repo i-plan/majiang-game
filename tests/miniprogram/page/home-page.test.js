@@ -3,11 +3,11 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 
-const ROOT = path.resolve(__dirname, '..')
-const gameSession = require(path.join(ROOT, 'game', 'runtime', 'gameSession'))
+const ROOT = path.resolve(__dirname, '../../..')
+const gameSession = require(path.join(ROOT, 'miniprogram', 'game', 'runtime', 'gameSession'))
 
-const homePagePath = path.join(ROOT, 'pages', 'home', 'home.js')
-const homePageWxmlPath = path.join(ROOT, 'pages', 'home', 'home.wxml')
+const homePagePath = path.join(ROOT, 'miniprogram', 'pages', 'home', 'home.js')
+const homePageWxmlPath = path.join(ROOT, 'miniprogram', 'pages', 'home', 'home.wxml')
 
 function loadHomePageDefinition() {
   const resolvedHomePagePath = require.resolve(homePagePath)

@@ -1,10 +1,19 @@
 # 项目续接记录
 
 ## 项目概况
-- 项目名称：泉州麻将微信小程序
-- 技术栈：原生微信小程序 + JavaScript + CommonJS
-- 项目目录：直接使用根目录，不使用 `miniprogram/`
+- 项目名称：泉州麻将微信小游戏项目
+- 技术栈：原生微信小游戏 + 原生微信小程序（保留）+ JavaScript + CommonJS
+- 项目目录：`minigame/` 为当前运行主版本，`miniprogram/` 为保留的小程序版本，`tests/` 与 `package.json` 保留在仓库根目录
 - 当前范围：单机演示，1 名玩家 + 3 个 AI，不接后端，不做联机
+- 当前主线：`project.config.json` 已指向 `minigame/`，小游戏 scene/runtime 已接通并通过回归，小程序代码仅保留作参考与 page 回归
+
+## 2026-03-27 上午固定基线（后续 agent 必看）
+- 今天早上的迁移收口结果已经确认，后续工作默认在这套基线上继续，不要回退到旧的小程序根目录架构。
+- `project.config.json` 继续保持 `compileType: "minigame"`，默认运行目录是 `minigame/`。
+- `miniprogram/` 仅作为保留版与 page 回归来源，不再作为默认主开发目录。
+- 自动化测试继续保留在仓库根目录，固定分组为 `tests/minigame/...` 与 `tests/miniprogram/page/...`。
+- 当前稳定回归基线：`npm test` 已通过（`tests/minigame/...` 102 条），`npm run test:miniprogram:page` 已通过（`tests/miniprogram/page/...` 46 条）。
+- 如果继续做功能或修复，优先修改 `minigame/` 并同步补对应 `tests/minigame/...` 覆盖。
 
 ## 当前已完成的核心能力
 - 首页、牌桌页、结果页已接通
@@ -23,7 +32,7 @@
   - 游金 / 双游 / 三游
   - 主结算 + 三家番差结算
 - 近期已修复首页字体对比度问题
-- 已建立固定测试入口与分组脚本（`test:core / test:view / test:page / test:smoke / test:ai`）
+- 已建立固定测试入口与分组脚本（`test / test:core / test:view / test:scene / test:smoke / test:ai / test:miniprogram:page`）
 - 首页、牌桌页、结果页的关键跳转/操作已补防重复触发保护
 
 ## 2026-03-24 完成的事情
@@ -55,25 +64,25 @@
 - 完整一局冒烟测试通过
 - table view 展示测试通过
 
-## 今天（2026-03-25）完成的事情
+## 2026-03-25 完成的事情
 1. 修复开局发牌计数问题，保证补花后仍满足庄家 17 张、闲家 16 张。
 2. 建立并整理固定测试入口：
    - 新增 `package.json`
-   - 固化 `test / test:core / test:view / test:page / test:smoke / test:ai`
+   - 固化 `test / test:core / test:view / test:smoke / test:ai / test:miniprogram:page`
    - 使用 Node 内建 `node:test`，未引入额外依赖
 3. 补核心高风险自动化测试：
-   - `tests/action-evaluator.test.js`
-   - `tests/settlement.test.js`
-   - `tests/game-session.test.js`
-   - `tests/rules.test.js`
-   - `tests/smoke.test.js`
+   - `tests/minigame/core/action-evaluator.test.js`
+   - `tests/minigame/core/settlement.test.js`
+   - `tests/minigame/core/game-session.test.js`
+   - `tests/minigame/core/rules.test.js`
+   - `tests/minigame/smoke/smoke.test.js`
 4. 补展示层和页面交互测试：
-   - `tests/table-view.test.js`
-   - `tests/table-view-status.test.js`
-   - `tests/result-view.test.js`
-   - `tests/home-page.test.js`
-   - `tests/table-page.test.js`
-   - `tests/result-page.test.js`
+   - `tests/minigame/view/table-view.test.js`
+   - `tests/minigame/view/table-view-status.test.js`
+   - `tests/minigame/view/result-view.test.js`
+   - `tests/miniprogram/page/home-page.test.js`
+   - `tests/miniprogram/page/table-page.test.js`
+   - `tests/miniprogram/page/result-page.test.js`
 5. 修复/收紧页面交互与展示问题：
    - 首页开始对局防连点
    - 牌桌动作防重复点击
@@ -88,14 +97,55 @@
    - AI 在游金/天听锁牌时只打 `lastDrawTile`
    - `gameSession.startNextRound()` 的续局与整场结束重开分支补测试覆盖
 
-## 今天已经验证过的内容
+## 2026-03-25 已验证的内容
 - `npm run test:ai` 通过
 - `npm run test:core` 通过
 - `npm run test:view` 通过
-- `npm run test:page` 通过
+- `npm run test:miniprogram:page` 通过
 - `npm run test:smoke` 通过
 - `npm test` 全量通过
-- 当前共 38 条测试，全部通过
+- 当时共 38 条测试，全部通过
+
+## 2026-03-26 已完成的事情
+1. 修复 `minigame/game/runtime/gameSession.js` 中 `advanceAi()` 对 AI 无效动作的误判，确保 `applySelfAction` / `applyReactionAction` / `passReaction` 返回 `false` 时按 no-op 处理，不再误通知订阅者或误推进循环。
+2. 补充运行时与规则回归：
+   - `tests/minigame/core/game-session.test.js` 新增 AI self action / reaction action 失败时的 no-op 契约测试
+   - `tests/minigame/core/rules.test.js` 新增“多家同时可胡时，过牌后后续玩家仍可胡”的级联测试
+3. 调整牌桌交互：
+   - 保留版页面 `miniprogram/pages/table/table.js` 改为“双击同一张手牌出牌”
+   - 移除 `miniprogram/pages/table/table.wxml` 中独立出牌按钮
+   - `tests/miniprogram/page/table-page.test.js` 增补双击出牌与锁牌场景测试
+4. 微信开发者工具手测已完成，首页/牌桌/结果页关键跳转与交互已人工验证。
+5. 已明确后续迁移方向：
+   - 下一阶段不是单纯改目录名，而是把当前小程序工程迁移为 `minigame/` 下的微信小游戏工程
+   - 云开发仅创建模板骨架，不接入 `wx.cloud` 运行时代码
+   - `tests/` 与 `package.json` 继续保留在仓库根目录
+6. 已创建 `minigame/` 与 `cloudfunctions/helloWorld/` 的初始骨架文件，但迁移实现已暂缓，后续需按小游戏方案继续完成 scene 壳、逻辑迁移、测试替换和项目配置切换。
+
+## 2026-03-26 已验证的内容
+- `node --test tests/minigame/core/game-session.test.js` 通过
+- `node --test tests/minigame/core/rules.test.js` 通过
+- `node --test tests/miniprogram/page/table-page.test.js` 通过
+- `npm test` 全量通过
+- 当前共 111 条测试，全部通过
+- 微信开发者工具手测完成
+
+## 2026-03-27 已完成的事情
+1. 完成小游戏主线迁移收口：
+   - `project.config.json` 已切为 `compileType: "minigame"` 并指向 `minigame/`
+   - 旧小程序运行时代码统一保留到 `miniprogram/`
+   - 测试目录整理为 `tests/minigame/...` 与 `tests/miniprogram/page/...`
+2. 为小游戏胶水层补直接测试覆盖：
+   - `tests/minigame/scene/game-bootstrap.test.js`
+   - `tests/minigame/scene/scene-manager.test.js`
+   - `tests/minigame/view/layout.test.js`
+   - `tests/minigame/view/renderer.test.js`
+   - `tests/minigame/view/touch-router.test.js`
+3. 更新 `CLAUDE.md`、`项目总规划.md` 和 `.claude/agents/test-case-writer.md`，统一当前工程目录、脚本分组和测试路径认知。
+
+## 2026-03-27 已验证的内容
+- `npm test` 通过（`tests/minigame/...` 当前共 102 条测试）
+- `npm run test:miniprogram:page` 通过（`tests/miniprogram/page/...` 当前共 46 条测试）
 
 ## 当前已知注意点
 - 天听的原始规则定义还不够完整，当前实现是保守推断：
@@ -103,35 +153,35 @@
   - 后续按天听处理
   - 未胡时只能打摸到的牌
 - 如果后续拿到更完整的规则原文，这一块可能需要调整
-- 当前自动化已覆盖核心规则、selector、page 交互和 smoke，但微信开发者工具中的真实点击/跳转/渲染手测还需要补
+- 仓库当前运行主版本已切为 `minigame/` 微信小游戏工程；`miniprogram/` 仅作为保留版本与 page 回归来源
+- `minigame/game/` 与 `miniprogram/game/` 当前保留两份逻辑副本，后续若继续迭代规则，需要明确同步策略，避免实现漂移
 
 ## 明天继续时建议先做什么
-1. 在微信开发者工具手工验证：
-   - 首页开始对局防连点
-   - 结果页“下一局 / 返回首页”跳转
-   - 牌桌多种吃法按钮文案与顺序
-   - 庄家 / 金牌 / 骰子 / 游金 / 天听展示同步
-2. 如果手测发现问题，优先修正页面交互和展示偏差，并补对应测试
-3. 如果手测稳定，继续校准规则边界：
-   - 天听原始规则
-   - 游金 / 双游 / 三游限制
-   - 番差与结算细则
+1. 如果继续开发功能，优先在 `minigame/` 上迭代，并同步补 `tests/minigame/core|scene|view|smoke` 对应覆盖。
+2. `miniprogram/` 仅在需要保留旧页面行为或做回归对照时维护，新增能力默认不要再落到小程序页面层。
+3. 可以继续补高价值规则边界：
+   - 天听激活后的真实和牌分类
+   - 游金限制在抢杠胡路径上的边界
+   - 结算与番差细则
 4. 继续保持通过固定脚本回归：
    - `npm run test:core`
    - `npm run test:view`
-   - `npm run test:page`
+   - `npm run test:scene`
    - `npm run test:smoke`
+   - `npm run test:miniprogram:page`
    - `npm test`
 
 ## 关键文件
-- `game/core/stateMachine.js`
-- `game/core/actionEvaluator.js`
-- `game/core/winChecker.js`
-- `game/core/settlement.js`
-- `game/runtime/gameSession.js`
-- `game/selectors/tableView.js`
-- `game/selectors/resultView.js`
-- `pages/table/table.js`
+- `minigame/game/core/stateMachine.js`
+- `minigame/game/core/actionEvaluator.js`
+- `minigame/game/core/winChecker.js`
+- `minigame/game/core/settlement.js`
+- `minigame/game/runtime/gameSession.js`
+- `minigame/game/selectors/tableView.js`
+- `minigame/game/selectors/resultView.js`
+- `minigame/src/scenes/tableScene.js`
+- `minigame/src/sceneManager.js`
+- `miniprogram/pages/table/table.js`
 - `项目总规划.md`
 
 ## 工作约束

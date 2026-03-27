@@ -2,11 +2,11 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
 
-const ROOT = path.resolve(__dirname, '..')
-const rules = require(path.join(ROOT, 'game', 'config', 'rules', 'mvp'))
+const ROOT = path.resolve(__dirname, '../../..')
+const rules = require(path.join(ROOT, 'minigame', 'game', 'config', 'rules', 'mvp'))
 
-const actionEvaluatorPath = path.join(ROOT, 'game', 'core', 'actionEvaluator')
-const winCheckerPath = path.join(ROOT, 'game', 'core', 'winChecker')
+const actionEvaluatorPath = path.join(ROOT, 'minigame', 'game', 'core', 'actionEvaluator')
+const winCheckerPath = path.join(ROOT, 'minigame', 'game', 'core', 'winChecker')
 
 function createTile(code, label, seatId, index) {
   return {

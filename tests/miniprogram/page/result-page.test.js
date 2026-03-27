@@ -3,13 +3,13 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 
-const ROOT = path.resolve(__dirname, '..')
-const rules = require(path.join(ROOT, 'game', 'config', 'rules', 'mvp'))
-const { buildRoundResult } = require(path.join(ROOT, 'game', 'core', 'settlement'))
-const gameSession = require(path.join(ROOT, 'game', 'runtime', 'gameSession'))
+const ROOT = path.resolve(__dirname, '../../..')
+const rules = require(path.join(ROOT, 'miniprogram', 'game', 'config', 'rules', 'mvp'))
+const { buildRoundResult } = require(path.join(ROOT, 'miniprogram', 'game', 'core', 'settlement'))
+const gameSession = require(path.join(ROOT, 'miniprogram', 'game', 'runtime', 'gameSession'))
 
-const resultPagePath = path.join(ROOT, 'pages', 'result', 'result.js')
-const resultPageWxmlPath = path.join(ROOT, 'pages', 'result', 'result.wxml')
+const resultPagePath = path.join(ROOT, 'miniprogram', 'pages', 'result', 'result.js')
+const resultPageWxmlPath = path.join(ROOT, 'miniprogram', 'pages', 'result', 'result.wxml')
 
 function loadResultPageDefinition() {
   const resolvedResultPagePath = require.resolve(resultPagePath)

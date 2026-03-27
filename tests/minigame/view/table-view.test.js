@@ -2,10 +2,10 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
 
-const ROOT = path.resolve(__dirname, '..')
-const rules = require(path.join(ROOT, 'game', 'config', 'rules', 'mvp'))
-const { startRound } = require(path.join(ROOT, 'game', 'core', 'stateMachine'))
-const { buildTableView } = require(path.join(ROOT, 'game', 'selectors', 'tableView'))
+const ROOT = path.resolve(__dirname, '../../..')
+const rules = require(path.join(ROOT, 'minigame', 'game', 'config', 'rules', 'mvp'))
+const { startRound } = require(path.join(ROOT, 'minigame', 'game', 'core', 'stateMachine'))
+const { buildTableView } = require(path.join(ROOT, 'minigame', 'game', 'selectors', 'tableView'))
 
 function getDifferentTileId(seat, excludedTileId) {
   const tile = seat.concealedTiles.find((item) => item.id !== excludedTileId)
