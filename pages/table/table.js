@@ -1,6 +1,8 @@
 const gameSession = require('../../game/runtime/gameSession')
 const { buildTableView } = require('../../game/selectors/tableView')
 
+const DOUBLE_TAP_INTERVAL = 350
+
 Page({
   data: {
     view: null,
@@ -15,6 +17,7 @@ Page({
   onShow() {
     this._destroyed = false
     this._navigating = false
+    this.resetPendingDiscardTap()
 
     if (!this.unsubscribe) {
       this.unsubscribe = gameSession.subscribe(() => {
@@ -51,10 +54,33 @@ Page({
   cleanup() {
     clearTimeout(this.aiTimer)
     this._destroyed = true
+    this.resetPendingDiscardTap()
 
     if (this.unsubscribe) {
       this.unsubscribe()
       this.unsubscribe = null
+    }
+  },
+
+  resetPendingDiscardTap() {
+    this._lastTileTapId = ''
+    this._lastTileTapAt = 0
+  },
+
+  discardSelectedTile(tileId) {
+    if (this.data.acting || !this.data.view || !this.data.view.canDiscard || this.data.view.discardDisabled) {
+      return
+    }
+
+    this.resetPendingDiscardTap()
+    this.setData({
+      selectedTileId: '',
+      acting: true
+    })
+
+    const changed = gameSession.discardHumanTile(tileId)
+    if (!changed) {
+      this.refreshView()
     }
   },
 
@@ -73,6 +99,7 @@ Page({
     }
 
     const view = buildTableView(snapshot, { selectedTileId })
+    this.resetPendingDiscardTap()
     this.setData({
       view,
       selectedTileId: view.selectedTileId,
@@ -122,11 +149,19 @@ Page({
       return
     }
 
-    const selectedTileId = view.lockedDiscardTileId
-      ? view.lockedDiscardTileId
-      : (this.data.selectedTileId === tileId ? '' : tileId)
+    const now = Date.now()
+    const isDoubleTapDiscard = this.data.selectedTileId === tileId && this._lastTileTapId === tileId && now - this._lastTileTapAt <= DOUBLE_TAP_INTERVAL
+
+    if (isDoubleTapDiscard && view.canDiscard && !view.discardDisabled) {
+      this.discardSelectedTile(tileId)
+      return
+    }
+
+    const selectedTileId = view.lockedDiscardTileId || tileId
     const nextView = buildTableView(gameSession.getSnapshot(), { selectedTileId })
 
+    this._lastTileTapId = tileId
+    this._lastTileTapAt = now
     this.setData({
       selectedTileId: nextView.selectedTileId,
       view: nextView
@@ -134,21 +169,7 @@ Page({
   },
 
   onDiscardTap() {
-    if (this.data.acting || !this.data.view || !this.data.view.canDiscard || this.data.view.discardDisabled) {
-      return
-    }
-
-    const tileId = this.data.selectedTileId
-
-    this.setData({
-      selectedTileId: '',
-      acting: true
-    })
-
-    const changed = gameSession.discardHumanTile(tileId)
-    if (!changed) {
-      this.refreshView()
-    }
+    this.discardSelectedTile(this.data.selectedTileId)
   },
 
   onActionTap(event) {

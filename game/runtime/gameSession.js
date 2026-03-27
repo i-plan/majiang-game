@@ -167,9 +167,15 @@ function advanceAi() {
       const reactionAction = simpleAi.chooseReactionAction(state, reactionPrompt.seatId, reactionPrompt.actions)
 
       if (reactionAction) {
-        applyReactionAction(state, reactionPrompt.seatId, reactionAction)
+        const applied = applyReactionAction(state, reactionPrompt.seatId, reactionAction)
+        if (!applied) {
+          break
+        }
       } else {
-        passReaction(state, reactionPrompt.seatId)
+        const passed = passReaction(state, reactionPrompt.seatId)
+        if (!passed) {
+          break
+        }
       }
 
       changed = true
@@ -184,7 +190,11 @@ function advanceAi() {
     const selfAction = simpleAi.chooseTurnAction(state, state.activeSeat, selfActions)
 
     if (selfAction) {
-      applySelfAction(state, state.activeSeat, selfAction)
+      const applied = applySelfAction(state, state.activeSeat, selfAction)
+      if (!applied) {
+        break
+      }
+
       changed = true
       continue
     }

@@ -84,9 +84,6 @@
     </view>
 
     <view class="hand-actions">
-      <button class="secondary-btn discard-btn {{acting ? 'page-btn-disabled' : ''}}" bindtap="onDiscardTap" disabled="{{acting || view.discardDisabled || !view.canDiscard}}">
-        {{view.discardButtonText}}
-      </button>
       <action-panel actions="{{view.availableActions}}" disabled="{{acting}}" bind:actiontap="onActionTap" />
     </view>
   </view>

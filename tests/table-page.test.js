@@ -9,6 +9,8 @@ const { buildRoundResult } = require(path.join(ROOT, 'game', 'core', 'settlement
 const { startRound } = require(path.join(ROOT, 'game', 'core', 'stateMachine'))
 const gameSession = require(path.join(ROOT, 'game', 'runtime', 'gameSession'))
 
+const actionEvaluatorPath = path.join(ROOT, 'game', 'core', 'actionEvaluator')
+const tableViewPath = path.join(ROOT, 'game', 'selectors', 'tableView')
 const tablePagePath = path.join(ROOT, 'pages', 'table', 'table.js')
 const tablePageWxmlPath = path.join(ROOT, 'pages', 'table', 'table.wxml')
 const seatSummaryWxmlPath = path.join(ROOT, 'components', 'seat-summary', 'index.wxml')
@@ -39,8 +41,57 @@ function loadTablePageDefinition() {
   return capturedDefinition
 }
 
-function createPageInstance() {
-  const definition = loadTablePageDefinition()
+function loadTablePageDefinitionWithPatchedActionEvaluator(overrides) {
+  const resolvedActionEvaluatorPath = require.resolve(actionEvaluatorPath)
+  const resolvedTableViewPath = require.resolve(tableViewPath)
+  const resolvedTablePagePath = require.resolve(tablePagePath)
+
+  delete require.cache[resolvedTablePagePath]
+  delete require.cache[resolvedTableViewPath]
+  delete require.cache[resolvedActionEvaluatorPath]
+
+  const actionEvaluator = require(resolvedActionEvaluatorPath)
+  const originalImplementations = {
+    getSelfActions: actionEvaluator.getSelfActions,
+    getCurrentReactionPrompt: actionEvaluator.getCurrentReactionPrompt
+  }
+
+  Object.keys(overrides || {}).forEach((key) => {
+    actionEvaluator[key] = overrides[key]
+  })
+
+  const originalPage = global.Page
+  const originalWx = global.wx
+  let capturedDefinition = null
+
+  global.Page = (definition) => {
+    capturedDefinition = definition
+  }
+  global.wx = {
+    redirectTo() {},
+    reLaunch() {}
+  }
+
+  try {
+    require(resolvedTablePagePath)
+  } finally {
+    global.Page = originalPage
+    global.wx = originalWx
+  }
+
+  return {
+    definition: capturedDefinition,
+    restore() {
+      actionEvaluator.getSelfActions = originalImplementations.getSelfActions
+      actionEvaluator.getCurrentReactionPrompt = originalImplementations.getCurrentReactionPrompt
+      delete require.cache[resolvedTablePagePath]
+      delete require.cache[resolvedTableViewPath]
+      delete require.cache[resolvedActionEvaluatorPath]
+    }
+  }
+}
+
+function createPageInstanceFromDefinition(definition) {
   const page = {
     data: JSON.parse(JSON.stringify(definition.data)),
     setData(patch) {
@@ -55,6 +106,19 @@ function createPageInstance() {
   })
 
   return page
+}
+
+function createPageInstance() {
+  return createPageInstanceFromDefinition(loadTablePageDefinition())
+}
+
+function createPageInstanceWithPatchedActionEvaluator(overrides) {
+  const { definition, restore } = loadTablePageDefinitionWithPatchedActionEvaluator(overrides)
+
+  return {
+    page: createPageInstanceFromDefinition(definition),
+    restore
+  }
 }
 
 function readTableTemplate() {
@@ -117,7 +181,7 @@ function createActionPanelInstance(properties) {
   return component
 }
 
-test('table page ignores discard and action taps while acting', () => {
+test('table page ignores tile and action taps while acting', () => {
   const page = createPageInstance()
   let discardCalls = 0
   let passCalls = 0
@@ -137,6 +201,7 @@ test('table page ignores discard and action taps while acting', () => {
   try {
     page.data = {
       view: {
+        canSelectHandTile: true,
         canDiscard: true,
         discardDisabled: false,
         availableActions: [{ type: 'pass', label: '过' }],
@@ -146,7 +211,14 @@ test('table page ignores discard and action taps while acting', () => {
       acting: true
     }
 
-    page.onDiscardTap()
+    page.onTileTap({
+      detail: { tileId: 'tile-1' },
+      currentTarget: {
+        dataset: {
+          tileId: 'tile-1'
+        }
+      }
+    })
     page.onActionTap({ detail: { index: 0 } })
 
     assert.equal(discardCalls, 0)
@@ -254,17 +326,26 @@ test('table page refreshView loads a real snapshot into page view data and clear
   }
 })
 
-test('table page onTileTap toggles manual selection when discard is not locked', () => {
+test('table page onTileTap selects first and discards only after a quick second tap on the same tile', () => {
   const page = createPageInstance()
   const originalGetSnapshot = gameSession.getSnapshot
+  const originalDiscardHumanTile = gameSession.discardHumanTile
+  const originalDateNow = Date.now
   const snapshot = startRound(rules, {
     dealerSeat: 0,
     roundIndex: 1,
     bankerBase: 10
   })
   const tileId = getDifferentTileId(snapshot.seats[0], snapshot.lastDrawTile.id)
+  const discardCalls = []
+  let now = 1000
 
   gameSession.getSnapshot = () => snapshot
+  gameSession.discardHumanTile = (discardTileId) => {
+    discardCalls.push(discardTileId)
+    return true
+  }
+  Date.now = () => now
 
   try {
     page.refreshView()
@@ -281,7 +362,9 @@ test('table page onTileTap toggles manual selection when discard is not locked',
     assert.equal(page.data.selectedTileId, tileId)
     assert.equal(page.data.view.selectedTileId, tileId)
     assert.equal(page.data.view.discardDisabled, false)
+    assert.deepEqual(discardCalls, [])
 
+    now = 1500
     page.onTileTap({
       detail: { tileId },
       currentTarget: {
@@ -291,11 +374,28 @@ test('table page onTileTap toggles manual selection when discard is not locked',
       }
     })
 
+    assert.equal(page.data.selectedTileId, tileId)
+    assert.equal(page.data.view.selectedTileId, tileId)
+    assert.equal(page.data.acting, false)
+    assert.deepEqual(discardCalls, [])
+
+    now = 1700
+    page.onTileTap({
+      detail: { tileId },
+      currentTarget: {
+        dataset: {
+          tileId
+        }
+      }
+    })
+
+    assert.deepEqual(discardCalls, [tileId])
     assert.equal(page.data.selectedTileId, '')
-    assert.equal(page.data.view.selectedTileId, '')
-    assert.equal(page.data.view.discardDisabled, true)
+    assert.equal(page.data.acting, true)
   } finally {
     gameSession.getSnapshot = originalGetSnapshot
+    gameSession.discardHumanTile = originalDiscardHumanTile
+    Date.now = originalDateNow
   }
 })
 
@@ -331,6 +431,172 @@ test('table page onTileTap ignores non-lastDrawTile taps when discard is locked 
     assert.equal(page.data.view.selectedTileId, snapshot.lastDrawTile.id)
   } finally {
     gameSession.getSnapshot = originalGetSnapshot
+  }
+})
+
+test('table page onTileTap still requires a quick second tap before discarding a locked lastDrawTile', () => {
+  const page = createPageInstance()
+  const originalGetSnapshot = gameSession.getSnapshot
+  const originalDiscardHumanTile = gameSession.discardHumanTile
+  const originalDateNow = Date.now
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 1,
+    bankerBase: 10
+  })
+  const discardCalls = []
+  let now = 2000
+
+  snapshot.seats[0].youJinLevel = 1
+  gameSession.getSnapshot = () => snapshot
+  gameSession.discardHumanTile = (tileId) => {
+    discardCalls.push(tileId)
+    return true
+  }
+  Date.now = () => now
+
+  try {
+    page.refreshView()
+
+    page.onTileTap({
+      detail: { tileId: snapshot.lastDrawTile.id },
+      currentTarget: {
+        dataset: {
+          tileId: snapshot.lastDrawTile.id
+        }
+      }
+    })
+
+    assert.deepEqual(discardCalls, [])
+    assert.equal(page.data.selectedTileId, snapshot.lastDrawTile.id)
+    assert.equal(page.data.acting, false)
+
+    now = 2200
+    page.onTileTap({
+      detail: { tileId: snapshot.lastDrawTile.id },
+      currentTarget: {
+        dataset: {
+          tileId: snapshot.lastDrawTile.id
+        }
+      }
+    })
+
+    assert.deepEqual(discardCalls, [snapshot.lastDrawTile.id])
+    assert.equal(page.data.selectedTileId, '')
+    assert.equal(page.data.acting, true)
+  } finally {
+    gameSession.getSnapshot = originalGetSnapshot
+    gameSession.discardHumanTile = originalDiscardHumanTile
+    Date.now = originalDateNow
+  }
+})
+
+test('table page refreshView schedules ai advance when selector marks an ai turn as autoAdvance', () => {
+  const page = createPageInstance()
+  const originalGetSnapshot = gameSession.getSnapshot
+  const originalAdvanceAi = gameSession.advanceAi
+  const originalSetTimeout = global.setTimeout
+  const originalClearTimeout = global.clearTimeout
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 2,
+    bankerBase: 10
+  })
+
+  let scheduledDelay = 0
+  let scheduledHandler = null
+  let clearedTimers = 0
+  let advanceAiCalls = 0
+
+  snapshot.activeSeat = 2
+  snapshot.phase = 'turn'
+  gameSession.getSnapshot = () => snapshot
+  gameSession.advanceAi = () => {
+    advanceAiCalls += 1
+  }
+  global.setTimeout = (handler, delay) => {
+    scheduledHandler = handler
+    scheduledDelay = delay
+    return 64
+  }
+  global.clearTimeout = () => {
+    clearedTimers += 1
+  }
+
+  try {
+    page.refreshView()
+
+    assert.equal(page.data.view.activeLabel, '对家')
+    assert.equal(page.data.view.autoAdvance, true)
+    assert.equal(scheduledDelay, 500)
+    assert.equal(clearedTimers, 1)
+    assert.ok(scheduledHandler)
+
+    scheduledHandler()
+
+    assert.equal(advanceAiCalls, 1)
+  } finally {
+    gameSession.getSnapshot = originalGetSnapshot
+    gameSession.advanceAi = originalAdvanceAi
+    global.setTimeout = originalSetTimeout
+    global.clearTimeout = originalClearTimeout
+  }
+})
+
+test('table page refreshView schedules ai advance when selector exposes an ai reaction prompt', () => {
+  const { page, restore } = createPageInstanceWithPatchedActionEvaluator({
+    getCurrentReactionPrompt: () => ({
+      seatId: 2,
+      discardTile: { label: '5万' },
+      actions: [{ type: 'peng', label: '碰' }]
+    }),
+    getSelfActions: () => []
+  })
+  const originalGetSnapshot = gameSession.getSnapshot
+  const originalAdvanceAi = gameSession.advanceAi
+  const originalSetTimeout = global.setTimeout
+  const originalClearTimeout = global.clearTimeout
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 2,
+    bankerBase: 10
+  })
+
+  let scheduledDelay = 0
+  let scheduledHandler = null
+  let advanceAiCalls = 0
+
+  snapshot.phase = 'reaction'
+  gameSession.getSnapshot = () => snapshot
+  gameSession.advanceAi = () => {
+    advanceAiCalls += 1
+  }
+  global.setTimeout = (handler, delay) => {
+    scheduledHandler = handler
+    scheduledDelay = delay
+    return 65
+  }
+  global.clearTimeout = () => {}
+
+  try {
+    page.refreshView()
+
+    assert.equal(page.data.view.promptType, 'self')
+    assert.equal(page.data.view.autoAdvance, true)
+    assert.deepEqual(page.data.view.availableActions, [])
+    assert.match(page.data.view.statusText, /对家 正在响应 5万/)
+    assert.equal(scheduledDelay, 500)
+    assert.ok(scheduledHandler)
+
+    scheduledHandler()
+
+    assert.equal(advanceAiCalls, 1)
+  } finally {
+    restore()
+    gameSession.getSnapshot = originalGetSnapshot
+    gameSession.advanceAi = originalAdvanceAi
+    global.setTimeout = originalSetTimeout
+    global.clearTimeout = originalClearTimeout
   }
 })
 
@@ -862,6 +1128,125 @@ test('table page routes pass actions through passHumanReaction and unlocks after
   }
 })
 
+test('table page routes selector-built human reaction actions through takeHumanReaction', () => {
+  const reactionAction = { type: 'chi', label: '吃 2万 3万' }
+  const { page, restore } = createPageInstanceWithPatchedActionEvaluator({
+    getCurrentReactionPrompt: () => ({
+      seatId: 0,
+      discardTile: { label: '4万' },
+      actions: [reactionAction]
+    }),
+    getSelfActions: () => []
+  })
+  const originalGetSnapshot = gameSession.getSnapshot
+  const originalPassHumanReaction = gameSession.passHumanReaction
+  const originalTakeHumanReaction = gameSession.takeHumanReaction
+  const originalTakeHumanSelfAction = gameSession.takeHumanSelfAction
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 3,
+    bankerBase: 10
+  })
+
+  let receivedAction = null
+  let passCalls = 0
+  let selfActionCalls = 0
+
+  snapshot.phase = 'reaction'
+  gameSession.getSnapshot = () => snapshot
+  gameSession.passHumanReaction = () => {
+    passCalls += 1
+    return true
+  }
+  gameSession.takeHumanReaction = (action) => {
+    receivedAction = action
+    return true
+  }
+  gameSession.takeHumanSelfAction = () => {
+    selfActionCalls += 1
+    return true
+  }
+
+  try {
+    page.refreshView()
+
+    assert.equal(page.data.view.promptType, 'reaction')
+    assert.deepEqual(page.data.view.availableActions.map((action) => action.type), ['chi', 'pass'])
+
+    page.onActionTap({ detail: { index: 0 } })
+
+    assert.deepEqual(receivedAction, reactionAction)
+    assert.equal(passCalls, 0)
+    assert.equal(selfActionCalls, 0)
+    assert.equal(page.data.selectedTileId, '')
+    assert.equal(page.data.acting, true)
+  } finally {
+    restore()
+    gameSession.getSnapshot = originalGetSnapshot
+    gameSession.passHumanReaction = originalPassHumanReaction
+    gameSession.takeHumanReaction = originalTakeHumanReaction
+    gameSession.takeHumanSelfAction = originalTakeHumanSelfAction
+  }
+})
+
+test('table page routes selector-built human self actions through takeHumanSelfAction', () => {
+  const selfAction = { type: 'gang', label: '补杠' }
+  const { page, restore } = createPageInstanceWithPatchedActionEvaluator({
+    getCurrentReactionPrompt: () => null,
+    getSelfActions: () => [selfAction]
+  })
+  const originalGetSnapshot = gameSession.getSnapshot
+  const originalPassHumanReaction = gameSession.passHumanReaction
+  const originalTakeHumanReaction = gameSession.takeHumanReaction
+  const originalTakeHumanSelfAction = gameSession.takeHumanSelfAction
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 3,
+    bankerBase: 10
+  })
+
+  let receivedAction = null
+  let passCalls = 0
+  let reactionCalls = 0
+
+  snapshot.phase = 'turn'
+  snapshot.activeSeat = 0
+  gameSession.getSnapshot = () => snapshot
+  gameSession.passHumanReaction = () => {
+    passCalls += 1
+    return true
+  }
+  gameSession.takeHumanReaction = () => {
+    reactionCalls += 1
+    return true
+  }
+  gameSession.takeHumanSelfAction = (action) => {
+    receivedAction = action
+    return true
+  }
+
+  try {
+    page.refreshView()
+
+    assert.equal(page.data.view.promptType, 'self')
+    assert.deepEqual(page.data.view.availableActions, [selfAction])
+
+    page.onActionTap({ detail: { index: 0 } })
+
+    assert.deepEqual(receivedAction, selfAction)
+    assert.equal(passCalls, 0)
+    assert.equal(reactionCalls, 0)
+    assert.equal(page.data.selectedTileId, '')
+    assert.equal(page.data.acting, true)
+  } finally {
+    restore()
+    gameSession.getSnapshot = originalGetSnapshot
+    gameSession.passHumanReaction = originalPassHumanReaction
+    gameSession.takeHumanReaction = originalTakeHumanReaction
+    gameSession.takeHumanSelfAction = originalTakeHumanSelfAction
+  }
+})
+
 test('table page forwards the selected reaction action by index when multiple chi options are available', () => {
   const page = createPageInstance()
   const originalTakeHumanReaction = gameSession.takeHumanReaction
@@ -952,7 +1337,7 @@ test('table page template binds top-bar, logs, hand, and action controls to tabl
   assert.match(template, /<view wx:for="\{\{view\.recentLogs\}\}" wx:key="id" class="log-item">\{\{item\.text\}\}<\/view>/)
   assert.match(template, /<text wx:if="\{\{view\.humanSpecialStateLabel\}\}" class="pill">\{\{view\.humanSpecialStateLabel\}\}<\/text>/)
   assert.match(template, /<tile wx:for="\{\{view\.humanHand\}\}" wx:key="id" tile="\{\{item\}\}" disabled="\{\{acting \|\| item\.disabled\}\}" bind:tiletap="onTileTap" \/>/)
-  assert.match(template, /bindtap="onDiscardTap" disabled="\{\{acting \|\| view\.discardDisabled \|\| !view\.canDiscard\}\}">/)
+  assert.doesNotMatch(template, /onDiscardTap/)
   assert.match(template, /<action-panel actions="\{\{view\.availableActions\}\}" disabled="\{\{acting\}\}" bind:actiontap="onActionTap" \/>/)
 })
 

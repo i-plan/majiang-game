@@ -165,6 +165,43 @@ test('buildRoundResult keeps qiangGang source seat and winner seat consistent', 
   assert.equal(result.nextDealerSeat, 2)
 })
 
+test('buildRoundResult includes a claimed gold winning tile in the winner fan breakdown and share', () => {
+  const state = createState({
+    bankerBase: 2,
+    dealerSeat: 0,
+    discardCount: 4,
+    roundIndex: 6,
+    goldTileCode: 'white',
+    goldTileLabel: '白',
+    seats: [
+      createSeat(0, 100),
+      createSeat(1, 100),
+      createSeat(2, 100, {
+        concealedTiles: createTiles([
+          { code: 'white', label: '白' }
+        ], 'winner')
+      }),
+      createSeat(3, 100)
+    ]
+  })
+
+  const result = buildRoundResult(state, {
+    type: 'discardWin',
+    winnerSeat: 2,
+    discarderSeat: 0,
+    winningTile: createTile('white', '白', 'claimed-gold')
+  })
+
+  assert.equal(result.fanDetailsBySeat[2].goldCount, 2)
+  assert.deepEqual(result.fanDetailsBySeat[2].items.map((item) => ({ label: item.label, total: item.total })), [
+    { label: '金牌', total: 2 }
+  ])
+  assert.equal(result.mainSettlement.winnerFanTotal, 2)
+  assert.equal(result.mainSettlement.share, 4)
+  assert.deepEqual(result.deltas, [-4, -4, 12, -4])
+  assert.deepEqual(result.nextScores, [96, 96, 112, 96])
+})
+
 test('buildRoundResult marks draw games as match ended when any score is already zero or below', () => {
   const state = createState({
     bankerBase: 10,
