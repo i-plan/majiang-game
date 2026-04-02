@@ -321,6 +321,31 @@ test('table scene ignores non-lastDrawTile taps when discard is locked and still
   assert.equal(fixture.scene.getState().acting, true)
 })
 
+test('table scene unlocks after a no-op discard attempt on double tap', () => {
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 1,
+    bankerBase: 10
+  })
+  const tileId = getDifferentTileId(snapshot.seats[0], snapshot.lastDrawTile.id)
+  const fixture = createFixture({
+    snapshot,
+    now: 3000,
+    discardHumanTile() {
+      return false
+    }
+  })
+
+  fixture.scene.refreshView()
+  fixture.scene.onTileTap(tileId)
+  fixture.setNow(3200)
+  fixture.scene.onTileTap(tileId)
+
+  assert.deepEqual(fixture.sessionCalls.discardHumanTile, [tileId])
+  assert.equal(fixture.scene.getState().selectedTileId, '')
+  assert.equal(fixture.scene.getState().acting, false)
+})
+
 test('table scene refreshView schedules ai advance when the selector marks the turn as autoAdvance', () => {
   const snapshot = startRound(rules, {
     dealerSeat: 0,
@@ -442,6 +467,33 @@ test('table scene routes human reaction actions through takeHumanReaction', () =
   assert.equal(fixture.scene.getState().acting, true)
 })
 
+test('table scene unlocks after a no-op human reaction action', () => {
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 3,
+    bankerBase: 10
+  })
+  const fixture = createFixture({
+    snapshot,
+    takeHumanReaction() {
+      return false
+    }
+  })
+  const reactionAction = { type: 'chi', label: '吃 2万 3万' }
+
+  fixture.scene.refreshView()
+  const currentView = fixture.scene.getState().view
+  currentView.availableActions = [reactionAction]
+  currentView.promptType = 'reaction'
+
+  fixture.scene.onActionTap(0)
+
+  assert.deepEqual(fixture.sessionCalls.takeHumanReaction, [reactionAction])
+  assert.deepEqual(fixture.sessionCalls.takeHumanSelfAction, [])
+  assert.equal(fixture.scene.getState().selectedTileId, '')
+  assert.equal(fixture.scene.getState().acting, false)
+})
+
 test('table scene routes human self actions through takeHumanSelfAction', () => {
   const snapshot = startRound(rules, {
     dealerSeat: 0,
@@ -462,4 +514,31 @@ test('table scene routes human self actions through takeHumanSelfAction', () => 
   assert.deepEqual(fixture.sessionCalls.takeHumanReaction, [])
   assert.equal(fixture.scene.getState().selectedTileId, '')
   assert.equal(fixture.scene.getState().acting, true)
+})
+
+test('table scene unlocks after a no-op human self action', () => {
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 3,
+    bankerBase: 10
+  })
+  const fixture = createFixture({
+    snapshot,
+    takeHumanSelfAction() {
+      return false
+    }
+  })
+  const selfAction = { type: 'gang', label: '补杠' }
+
+  fixture.scene.refreshView()
+  const currentView = fixture.scene.getState().view
+  currentView.availableActions = [selfAction]
+  currentView.promptType = 'self'
+
+  fixture.scene.onActionTap(0)
+
+  assert.deepEqual(fixture.sessionCalls.takeHumanSelfAction, [selfAction])
+  assert.deepEqual(fixture.sessionCalls.takeHumanReaction, [])
+  assert.equal(fixture.scene.getState().selectedTileId, '')
+  assert.equal(fixture.scene.getState().acting, false)
 })

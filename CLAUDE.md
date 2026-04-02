@@ -147,23 +147,47 @@
 - `npm test` 通过（`tests/minigame/...` 当前共 102 条测试）
 - `npm run test:miniprogram:page` 通过（`tests/miniprogram/page/...` 当前共 46 条测试）
 
+## 2026-04-02 已完成的事情
+1. 按“只动 `minigame/`、暂不处理 `miniprogram/`、天听先保留不优先做”的约束继续推进规则与展示回归补强。
+2. 修复抢杠胡与游金边界一致性：
+   - `minigame/game/core/actionEvaluator.js` 导出 `isReactionHuBlockedByYouJin`
+   - `minigame/game/core/stateMachine.js` 在抢杠胡反应窗口中复用游金限制，阻止已处于游金或被其他座位双游压制的 seat 抢杠胡
+3. 补核心规则、运行时与 helper 契约回归：
+   - `tests/minigame/core/rules.test.js` 新增抢杠胡多家级联、开副露手牌配合 `extraTile`、开金跳过尾部花牌、`selfHu` 终局、`youJin/doubleYouJin/tripleYouJin` 型别来源、`threeGoldDown` 优先级、`findWinningCodes()` / `getTianTingDiscardCodes()` 排序与去重边界
+   - `tests/minigame/core/action-evaluator.test.js` 新增当前响应 seat 只暴露最高优先级动作、同优先级动作并存的过滤契约
+   - `tests/minigame/core/game-session.test.js` 新增 AI 缺失出牌选择 / 出牌失败时按 no-op 处理的契约
+   - `tests/minigame/scene/table-scene.test.js` 新增人类出牌 / 自身动作 / 响应动作失败后的 scene 解锁 no-op 契约
+4. 收紧 `settlement` 结算契约：
+   - 保持 `discardWin` / `qiangGang` 主结算按三家均摊
+   - `tests/minigame/core/settlement.test.js` 新增金牌与荣和张不进入暗刻/字牌暗刻来源、普通 `暗杠` 单点、`tianHu` 负向边界等回归
+5. 收紧结果页 selector 契约：
+   - `tests/minigame/view/result-view.test.js` 新增 `fanItemsText` 空值/多项拼接格式、`scoreFlowText` / `deltaText` 字符串格式、真实 `qiangGang` 结算快照展示
+6. 当前这一批工作全部落在 `minigame/` 与 `tests/minigame/...`，没有继续改 `miniprogram/`。
+
+## 2026-04-02 已验证的内容
+- `node --test tests/minigame/core/settlement.test.js` 通过（当前 17 条）
+- `node --test tests/minigame/view/result-view.test.js` 通过（当前 11 条）
+- `npm run test:core` 通过（当前 70 条）
+- `npm run test:view` 通过（当前 28 条）
+
 ## 当前已知注意点
 - 天听的原始规则定义还不够完整，当前实现是保守推断：
   - 庄家首弃成听后进入 `tianTingActive`
   - 后续按天听处理
   - 未胡时只能打摸到的牌
-- 如果后续拿到更完整的规则原文，这一块可能需要调整
+- 如果后续拿到更完整的规则原文，这一块可能需要调整；但当前用户已明确“天听先保留不做”，后续默认不优先推进这部分。
 - 仓库当前运行主版本已切为 `minigame/` 微信小游戏工程；`miniprogram/` 仅作为保留版本与 page 回归来源
+- 当前续做默认只处理 `minigame/` 与 `tests/minigame/...`，不再主动扩展 `miniprogram/` 侧改动。
 - `minigame/game/` 与 `miniprogram/game/` 当前保留两份逻辑副本，后续若继续迭代规则，需要明确同步策略，避免实现漂移
 
 ## 明天继续时建议先做什么
 1. 如果继续开发功能，优先在 `minigame/` 上迭代，并同步补 `tests/minigame/core|scene|view|smoke` 对应覆盖。
-2. `miniprogram/` 仅在需要保留旧页面行为或做回归对照时维护，新增能力默认不要再落到小程序页面层。
-3. 可以继续补高价值规则边界：
-   - 天听激活后的真实和牌分类
-   - 游金限制在抢杠胡路径上的边界
-   - 结算与番差细则
-4. 继续保持通过固定脚本回归：
+2. `miniprogram/` 当前仅保留作历史参考与 page 回归来源，默认不要再作为本轮迭代目标。
+3. 可以继续补高价值但低歧义的边界：
+   - `settlement` 与番差细则的剩余单点分支
+   - `resultView / tableView / scene` 的真实快照 selector 契约
+   - `scene / runtime` 的 no-op 与状态切换回归
+4. 如果准备收口，再继续保持通过固定脚本回归：
    - `npm run test:core`
    - `npm run test:view`
    - `npm run test:scene`

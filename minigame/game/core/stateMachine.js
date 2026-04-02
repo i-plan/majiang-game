@@ -1,6 +1,12 @@
 const { sortTiles, isFlowerTile } = require('../config/tileCatalog')
 const { createWall, drawLiveTile, drawSupplementTile, getRemainingCount } = require('./wall')
-const { evaluateDiscardResponses, getCurrentReactionPrompt, getSelfActions, isSameAction } = require('./actionEvaluator')
+const {
+  evaluateDiscardResponses,
+  getCurrentReactionPrompt,
+  getSelfActions,
+  isReactionHuBlockedByYouJin,
+  isSameAction
+} = require('./actionEvaluator')
 const { evaluateWin, getTianTingDiscardCodes } = require('./winChecker')
 const { buildRoundResult } = require('./settlement')
 
@@ -609,6 +615,10 @@ function createRobGangReactionWindow(state, seatId, code) {
 
   state.seats.forEach((seat) => {
     if (seat.seatId === seatId) {
+      return
+    }
+
+    if (seat.youJinLevel > 0 || isReactionHuBlockedByYouJin(state, seat.seatId)) {
       return
     }
 

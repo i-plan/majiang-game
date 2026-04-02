@@ -161,6 +161,83 @@ test('discard responses keep multiple chi options distinct and stably ordered', 
   }
 })
 
+test('getCurrentReactionPrompt keeps only the highest-priority actions for the chosen seat', () => {
+  const { actionEvaluator, restore } = loadActionEvaluatorWithoutHu()
+
+  try {
+    const state = {
+      rules,
+      seats: [
+        createSeat(0, []),
+        createSeat(1, []),
+        createSeat(2, []),
+        createSeat(3, [])
+      ],
+      reactionWindow: {
+        fromSeat: 0,
+        discardTile: createTile('wan-5', '5万', 'discard', 0),
+        optionsBySeat: {
+          1: [
+            { type: 'hu', priority: 300, label: '胡' },
+            { type: 'gang', priority: 200, label: '杠 5万' },
+            { type: 'peng', priority: 200, label: '碰 5万' }
+          ],
+          2: [
+            { type: 'chi', priority: 100, label: '吃 4万 6万' }
+          ]
+        },
+        passedSeats: []
+      }
+    }
+
+    const prompt = actionEvaluator.getCurrentReactionPrompt(state)
+
+    assert.ok(prompt)
+    assert.equal(prompt.seatId, 1)
+    assert.deepEqual(prompt.actions.map((action) => action.type), ['hu'])
+    assert.deepEqual(prompt.actions.map((action) => action.label), ['胡'])
+  } finally {
+    restore()
+  }
+})
+
+test('getCurrentReactionPrompt keeps same-priority gang and peng actions while excluding lower-priority chi', () => {
+  const { actionEvaluator, restore } = loadActionEvaluatorWithoutHu()
+
+  try {
+    const state = {
+      rules,
+      seats: [
+        createSeat(0, []),
+        createSeat(1, []),
+        createSeat(2, []),
+        createSeat(3, [])
+      ],
+      reactionWindow: {
+        fromSeat: 0,
+        discardTile: createTile('wan-5', '5万', 'discard', 0),
+        optionsBySeat: {
+          1: [
+            { type: 'gang', priority: 200, label: '杠 5万' },
+            { type: 'peng', priority: 200, label: '碰 5万' },
+            { type: 'chi', priority: 100, label: '吃 4万 6万' }
+          ]
+        },
+        passedSeats: []
+      }
+    }
+
+    const prompt = actionEvaluator.getCurrentReactionPrompt(state)
+
+    assert.ok(prompt)
+    assert.equal(prompt.seatId, 1)
+    assert.deepEqual(prompt.actions.map((action) => action.type), ['gang', 'peng'])
+    assert.deepEqual(prompt.actions.map((action) => action.label), ['杠 5万', '碰 5万'])
+  } finally {
+    restore()
+  }
+})
+
 test('reaction hu is blocked only after another seat reaches double youJin', () => {
   const { actionEvaluator, restore } = loadActionEvaluatorWithHu()
 

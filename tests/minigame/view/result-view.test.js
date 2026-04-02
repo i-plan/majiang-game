@@ -172,6 +172,15 @@ test('buildResultView marks score rows by actual positive and negative deltas', 
   assert.equal(view.seatResults[3].isNegativeDelta, true)
 })
 
+test('buildResultView formats score flow and delta strings from current and next scores', () => {
+  const view = buildResultView(createSnapshot('discardWin'))
+
+  assert.equal(view.seatResults[0].scoreFlowText, '100 → 85')
+  assert.equal(view.seatResults[0].deltaText, '-15')
+  assert.equal(view.seatResults[1].scoreFlowText, '100 → 145')
+  assert.equal(view.seatResults[1].deltaText, '+45')
+})
+
 test('buildResultView hides winner-specific tags for draw games', () => {
   const view = buildResultView(createSnapshot('drawGame'))
 
@@ -201,6 +210,28 @@ test('buildResultView keeps gold info and next dealer markers in sync', () => {
   assert.equal(view.nextDealerLabel, '右家')
   assert.equal(view.seatResults[1].isNextDealer, true)
   assert.equal(view.seatResults.filter((item) => item.isNextDealer).length, 1)
+})
+
+test('buildResultView formats fan item text for empty and multiple fan entries', () => {
+  const snapshot = createSnapshot('discardWin')
+  snapshot.result.fanDetailsBySeat = [
+    { totalFan: 0, items: [] },
+    {
+      totalFan: 3,
+      items: [
+        { text: '花牌 × 1', total: 1 },
+        { text: '金牌 × 2', total: 2 }
+      ]
+    },
+    { totalFan: 0, items: [] },
+    { totalFan: 0, items: [] }
+  ]
+
+  const view = buildResultView(snapshot)
+
+  assert.equal(view.seatResults[0].fanItemsText, '无')
+  assert.equal(view.seatResults[1].fanText, '3 番')
+  assert.equal(view.seatResults[1].fanItemsText, '花牌 × 1 = 1番 / 金牌 × 2 = 2番')
 })
 
 test('buildResultView formats a real discard-win settlement with pairwise transfers and claimed winning tile display', () => {
@@ -253,6 +284,51 @@ test('buildResultView formats a real discard-win settlement with pairwise transf
   assert.deepEqual(view.seatResults[1].concealedLabels, ['1万', '2万', '3万'])
   assert.equal(view.seatResults[1].fanItemsText, '花牌 × 1 = 1番')
   assert.equal(view.seatResults[0].fanItemsText, '花牌 × 3 = 3番')
+})
+
+test('buildResultView formats a real qiang-gang settlement with source-role text and claimed winning tile display', () => {
+  const state = createState({
+    bankerBase: 2,
+    dealerSeat: 0,
+    discardCount: 5,
+    roundIndex: 6,
+    seats: [
+      createSeat(0, '东', 100, {
+        concealedTiles: createTiles([{ code: 'wan-1', label: '1万' }], 'qiang-0')
+      }),
+      createSeat(1, '南', 100, {
+        concealedTiles: createTiles([{ code: 'tong-1', label: '1筒' }], 'qiang-1')
+      }),
+      createSeat(2, '西', 100, {
+        concealedTiles: createTiles([
+          { code: 'tong-6', label: '6筒' },
+          { code: 'tong-7', label: '7筒' }
+        ], 'qiang-2')
+      }),
+      createSeat(3, '北', 100, {
+        concealedTiles: createTiles([{ code: 'bamboo-1', label: '1条' }], 'qiang-3')
+      })
+    ]
+  })
+  const view = buildResultView(createRealSnapshot(state, {
+    type: 'qiangGang',
+    winnerSeat: 2,
+    discarderSeat: 1,
+    winningTile: createTile('tong-8', '8筒', 'qiang-gang')
+  }))
+
+  assert.equal(view.typeLabel, '抢杠胡')
+  assert.equal(view.mainWinLabel, '抢杠胡')
+  assert.equal(view.winnerLabel, '对家')
+  assert.equal(view.sourceSeatRoleLabel, '被抢杠')
+  assert.equal(view.sourceSeatLabel, '右家')
+  assert.equal(view.nextDealerLabel, '对家')
+  assert.equal(view.winningTileLabel, '8筒')
+  assert.equal(view.mainSettlementText, '(2 底 + 0 番) × 2 = 每家主付 4，胡家主收 12。')
+  assert.deepEqual(view.pairwiseTransferTexts, [])
+  assert.equal(view.replayButtonText, '下一局')
+  assert.deepEqual(view.seatResults[2].concealedLabels, ['6筒', '7筒', '8筒'])
+  assert.equal(view.seatResults[2].deltaText, '+12')
 })
 
 test('buildResultView formats a real match-ended self-draw settlement without duplicating the winning tile', () => {

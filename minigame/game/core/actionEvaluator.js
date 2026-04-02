@@ -376,6 +376,7 @@ module.exports = {
   getCurrentReactionPrompt,
   getReactionActionsForSeat,
   getSelfActions,
+  isReactionHuBlockedByYouJin,
   isSameAction,
   sortActions
 }

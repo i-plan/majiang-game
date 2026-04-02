@@ -893,6 +893,122 @@ test('advanceAi discards for an ai seat when no self action is available and the
   }
 })
 
+test('advanceAi treats a missing ai discard choice as a no-op without emit or retries', () => {
+  const roundState = createState({
+    bankerBase: 10,
+    activeSeat: 3
+  })
+  let selfActionLookups = 0
+  let chooseTurnCalls = 0
+  let chooseDiscardCalls = 0
+  let discardCalls = 0
+  const { gameSession, restore } = loadGameSessionWithPatchedDependencies({
+    startRound: () => roundState,
+    getCurrentReactionPrompt: () => null,
+    getSelfActions: () => {
+      selfActionLookups += 1
+      return []
+    },
+    chooseTurnAction: () => {
+      chooseTurnCalls += 1
+      return null
+    },
+    chooseDiscardTile: (state, seatId) => {
+      chooseDiscardCalls += 1
+      assert.equal(seatId, 3)
+      return ''
+    },
+    discardTile: () => {
+      discardCalls += 1
+      return true
+    }
+  })
+
+  try {
+    gameSession.startNewMatch({ bankerBase: 10 })
+
+    let notified = 0
+    const unsubscribe = gameSession.subscribe(() => {
+      notified += 1
+    })
+
+    try {
+      const changed = gameSession.advanceAi()
+
+      assert.equal(changed, false)
+      assert.equal(notified, 0)
+      assert.equal(selfActionLookups, 1)
+      assert.equal(chooseTurnCalls, 1)
+      assert.equal(chooseDiscardCalls, 1)
+      assert.equal(discardCalls, 0)
+      assert.equal(gameSession.getSnapshot().activeSeat, 3)
+      assert.equal(gameSession.getSnapshot().version, 1)
+    } finally {
+      unsubscribe()
+    }
+  } finally {
+    restore()
+  }
+})
+
+test('advanceAi treats a failed ai discard as a no-op without emit or retries', () => {
+  const roundState = createState({
+    bankerBase: 10,
+    activeSeat: 3
+  })
+  let selfActionLookups = 0
+  let chooseTurnCalls = 0
+  let chooseDiscardCalls = 0
+  const discardedTiles = []
+  const { gameSession, restore } = loadGameSessionWithPatchedDependencies({
+    startRound: () => roundState,
+    getCurrentReactionPrompt: () => null,
+    getSelfActions: () => {
+      selfActionLookups += 1
+      return []
+    },
+    chooseTurnAction: () => {
+      chooseTurnCalls += 1
+      return null
+    },
+    chooseDiscardTile: (state, seatId) => {
+      chooseDiscardCalls += 1
+      assert.equal(seatId, 3)
+      return 'ai-discard-tile'
+    },
+    discardTile: (state, seatId, tileId) => {
+      discardedTiles.push({ seatId, tileId })
+      return false
+    }
+  })
+
+  try {
+    gameSession.startNewMatch({ bankerBase: 10 })
+
+    let notified = 0
+    const unsubscribe = gameSession.subscribe(() => {
+      notified += 1
+    })
+
+    try {
+      const changed = gameSession.advanceAi()
+
+      assert.equal(changed, false)
+      assert.equal(notified, 0)
+      assert.equal(selfActionLookups, 1)
+      assert.equal(chooseTurnCalls, 1)
+      assert.equal(chooseDiscardCalls, 1)
+      assert.deepEqual(discardedTiles, [{ seatId: 3, tileId: 'ai-discard-tile' }])
+      assert.equal(gameSession.getSnapshot().activeSeat, 3)
+      assert.equal(gameSession.getSnapshot().version, 1)
+    } finally {
+      unsubscribe()
+    }
+  } finally {
+    restore()
+  }
+})
+
 test('human action wrappers forward HUMAN_SEAT and only emit when the state actually changes', () => {
   const cases = [
     {

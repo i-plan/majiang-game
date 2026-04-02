@@ -13,6 +13,99 @@ function getDifferentTileId(seat, excludedTileId) {
   return tile.id
 }
 
+function createReactionSnapshot(reactionSeatId, actions) {
+  const snapshot = startRound(rules, {
+    dealerSeat: 0,
+    roundIndex: 1,
+    bankerBase: 10
+  })
+  const discardTile = {
+    id: 'reaction-discard',
+    code: 'wan-5',
+    label: '5万',
+    flower: false
+  }
+
+  snapshot.phase = 'reaction'
+  snapshot.activeSeat = 1
+  snapshot.turnStage = null
+  snapshot.lastDiscardSeat = 1
+  snapshot.lastDiscardTile = discardTile
+  snapshot.reactionWindow = {
+    discardTile,
+    fromSeat: 1,
+    optionsBySeat: {
+      [reactionSeatId]: actions
+    },
+    passedSeats: []
+  }
+
+  return snapshot
+}
+
+test('buildTableView exposes human reaction actions with a trailing pass action', () => {
+  const snapshot = createReactionSnapshot(0, [
+    {
+      type: 'hu',
+      seatId: 0,
+      fromSeat: 1,
+      source: 'discard',
+      code: 'wan-5',
+      priority: 300,
+      label: '胡'
+    },
+    {
+      type: 'peng',
+      seatId: 0,
+      fromSeat: 1,
+      code: 'wan-5',
+      priority: 200,
+      label: '碰 5万'
+    }
+  ])
+  const requestedSelectedTileId = getDifferentTileId(snapshot.seats[0], snapshot.lastDrawTile.id)
+
+  const view = buildTableView(snapshot, {
+    selectedTileId: requestedSelectedTileId
+  })
+
+  assert.equal(view.promptType, 'reaction')
+  assert.equal(view.statusText, '你可以响应 5万')
+  assert.deepEqual(view.availableActions.map((action) => action.type), ['hu', 'pass'])
+  assert.equal(view.availableActions[0].label, '胡')
+  assert.equal(view.availableActions[1].label, '过')
+  assert.equal(view.canSelectHandTile, false)
+  assert.equal(view.canDiscard, false)
+  assert.equal(view.selectedTileId, '')
+  assert.equal(view.humanHand.every((tile) => tile.disabled), true)
+  assert.equal(view.autoAdvance, false)
+})
+
+test('buildTableView switches to ai reaction status and auto-advance when another seat is responding', () => {
+  const snapshot = createReactionSnapshot(2, [
+    {
+      type: 'hu',
+      seatId: 2,
+      fromSeat: 1,
+      source: 'discard',
+      code: 'wan-5',
+      priority: 300,
+      label: '胡'
+    }
+  ])
+
+  const view = buildTableView(snapshot, {
+    selectedTileId: ''
+  })
+
+  assert.equal(view.promptType, 'self')
+  assert.equal(view.statusText, '对家 正在响应 5万')
+  assert.deepEqual(view.availableActions, [])
+  assert.equal(view.canSelectHandTile, false)
+  assert.equal(view.canDiscard, false)
+  assert.equal(view.autoAdvance, true)
+})
+
 test('buildTableView keeps normal manual selection when the player is not in a locked state', () => {
   const snapshot = startRound(rules, {
     dealerSeat: 0,
