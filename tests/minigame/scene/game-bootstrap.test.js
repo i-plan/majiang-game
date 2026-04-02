@@ -78,7 +78,7 @@ test('bootGame wires wx touch events to the created scene manager and re-renders
         getViewModel() {
           return {
             type: 'home',
-            title: '泉州麻将',
+            title: '伤心麻一麻',
             subtitle: '1 名玩家 + 3 个 AI 单机演示',
             bankerBaseOptions: [],
             selectedBankerBase: 2,
@@ -140,7 +140,7 @@ test('bootGame returns the existing manager when called repeatedly within the sa
           return false
         },
         getViewModel() {
-          return { type: 'home', title: '泉州麻将', subtitle: '', bankerBaseOptions: [], selectedBankerBase: 2, starting: false }
+          return { type: 'home', title: '伤心麻一麻', subtitle: '', bankerBaseOptions: [], selectedBankerBase: 2, starting: false }
         }
       }
     }

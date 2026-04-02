@@ -1,10 +1,22 @@
 const DEFAULT_VIEWPORT = {
-  width: 375,
-  height: 667
+  width: 667,
+  height: 375
 }
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value))
+}
+
+function normalizeViewportSize(width, height) {
+  const rawWidth = Math.round(width || DEFAULT_VIEWPORT.width)
+  const rawHeight = Math.round(height || DEFAULT_VIEWPORT.height)
+  const isLandscape = rawWidth >= rawHeight
+
+  return {
+    width: Math.max(isLandscape ? 568 : 320, rawWidth),
+    height: Math.max(isLandscape ? 320 : 568, rawHeight),
+    isLandscape
+  }
 }
 
 function getViewport(wxApi) {
@@ -26,20 +38,31 @@ function getViewport(wxApi) {
 }
 
 function createLayout(width, height) {
-  const safeWidth = Math.max(320, Math.round(width || DEFAULT_VIEWPORT.width))
-  const safeHeight = Math.max(568, Math.round(height || DEFAULT_VIEWPORT.height))
-  const padding = Math.round(safeWidth * 0.04)
-  const gap = Math.max(10, Math.round(padding * 0.75))
+  const viewport = normalizeViewportSize(width, height)
+  const padding = viewport.isLandscape
+    ? clamp(Math.round(viewport.width * 0.02), 10, 18)
+    : Math.round(viewport.width * 0.04)
+  const gap = viewport.isLandscape
+    ? clamp(Math.round(padding * 0.72), 8, 12)
+    : Math.max(10, Math.round(padding * 0.75))
+  const sectionGap = viewport.isLandscape
+    ? clamp(Math.round(gap * 0.9), 8, 10)
+    : gap
 
   return {
-    width: safeWidth,
-    height: safeHeight,
+    width: viewport.width,
+    height: viewport.height,
+    isLandscape: viewport.isLandscape,
     padding,
     gap,
     radius: 14,
-    sectionGap: gap,
+    sectionGap,
     footerInset: padding,
-    topInset: padding
+    topInset: padding,
+    contentInset: viewport.isLandscape ? clamp(Math.round(viewport.height * 0.03), 8, 10) : 12,
+    actionHeight: viewport.isLandscape ? clamp(Math.round(viewport.height * 0.11), 34, 36) : 44,
+    actionMinWidth: viewport.isLandscape ? 74 : 96,
+    handHeight: viewport.isLandscape ? clamp(Math.round(viewport.height * 0.16), 50, 58) : 70
   }
 }
 
@@ -95,5 +118,6 @@ module.exports = {
   createLayout,
   createRowSlots,
   createWrappedSlots,
-  getViewport
+  getViewport,
+  normalizeViewportSize
 }

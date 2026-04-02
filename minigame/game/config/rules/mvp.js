@@ -1,6 +1,6 @@
 module.exports = {
   id: 'quanzhou-local',
-  name: '泉州麻将',
+  name: '伤心麻一麻',
   seatCount: 4,
   includeFlowers: true,
   fixedDealerSeat: 0,

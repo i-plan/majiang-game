@@ -126,7 +126,7 @@ test('home scene exposes a home view model for renderer consumption', () => {
   const viewModel = scene.getViewModel()
 
   assert.equal(viewModel.type, 'home')
-  assert.equal(viewModel.title, '泉州麻将')
+  assert.equal(viewModel.title, '伤心麻一麻')
   assert.equal(viewModel.subtitle, '1 名玩家 + 3 个 AI 单机演示')
   assert.equal(viewModel.selectedBankerBase, rules.match.defaultBankerBase)
   assert.deepEqual(viewModel.bankerBaseOptions.map((item) => item.value), rules.match.bankerBaseOptions)

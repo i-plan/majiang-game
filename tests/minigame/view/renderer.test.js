@@ -48,7 +48,7 @@ test('renderer can render the home scene without a canvas context and still expo
 
   const targets = renderer.render({
     type: 'home',
-    title: '泉州麻将',
+    title: '伤心麻一麻',
     subtitle: '1 名玩家 + 3 个 AI 单机演示',
     bankerBaseOptions: [
       { value: 2, label: '庄底 2' },
