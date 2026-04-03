@@ -7,41 +7,21 @@ This file provides development guidelines and conventions for agents working on 
 - **Project Type**: Native WeChat Mini-game + Mini-program
 - **Tech Stack**: JavaScript + CommonJS (no ES modules, no build chains)
 - **Main Directory**: `minigame/` (current active version)
-- **Legacy Directory**: `miniprogram/` (retained for regression reference)
+- **Legacy Directory**: `miniprogram/` (retained for reference)
 - **Scope**: Single-player demo with 3 AI players, no backend/online multiplayer
+- **Validation Policy**: This repo no longer keeps automated test assets or `npm test` scripts. Prefer manual verification in WeChat Developer Tools and do not add test files or test scripts unless the user explicitly asks to restore them.
 
 ## Commands
 
-### Running Tests
+### Manual Verification
 
-```bash
-# Run all tests (102 minigame tests + 46 miniprogram page tests)
-npm test
-
-# Run by category
-npm run test:core      # Core game logic (rules, action-evaluator, settlement, game-session)
-npm run test:view      # View layer tests
-npm run test:scene     # Scene management tests
-npm run test:smoke    # End-to-end smoke tests
-npm run test:ai       # AI behavior tests
-npm run test:miniprogram:page  # Mini-program page regression tests
-
-# Run single test file
-node --test --test-concurrency=1 tests/minigame/core/rules.test.js
-node --test --test-concurrency=1 tests/minigame/view/table-view.test.js
-```
-
-Note: `--test-concurrency=1` is required to ensure deterministic test execution order.
-
-### Manual Testing
-
-- Use WeChat Developer Tools to test in real device/simulator
-- Open `project.config.json` (compileType: "minigame") for小游戏 testing
-- Open with compileType: "miniprogram" for小程序 page regression
+- Use WeChat Developer Tools to verify gameplay flows in simulator or on device
+- Open `project.config.json` with `compileType: "minigame"` for the active小游戏 version
+- `miniprogram/` is retained only for historical reference and preserved page behavior checks when explicitly needed
 
 ## Directory Structure
 
-```
+```text
 minigame/
 ├── game/
 │   ├── core/          # Game logic (stateMachine, actionEvaluator, winChecker, settlement)
@@ -58,15 +38,6 @@ minigame/
 │   ├── table/
 │   └── result/
 └── ...
-
-tests/
-├── minigame/
-│   ├── core/
-│   ├── scene/
-│   ├── view/
-│   └── smoke/
-└── miniprogram/
-    └── page/
 ```
 
 ## Code Style Guidelines
@@ -77,6 +48,7 @@ tests/
 - **No Backend**: Do not add backend or online multiplayer features
 - **No Build Chains**: Use native WeChat mini-game APIs, no Webpack/Rollup
 - **No Secrets**: Never commit secrets, keys, or credentials
+- **Manual Verification First**: Do not proactively add automated tests, test scaffolds, or test scripts; validate affected flows manually by default
 
 ### Imports
 
@@ -106,43 +78,14 @@ tests/
 
 ### Error Handling
 
-- Use assertions in tests:
-  ```javascript
-  assert.notEqual(index, -1, `缺少测试用牌: ${description}`)
-  assert.strictEqual(actual, expected)
-  ```
-- In production code, handle gracefully with try-catch for async operations
+- In production code, handle gracefully with try-catch for async operations when needed
 - Validate inputs at function boundaries
+- Keep runtime failure paths simple and explicit
 
 ### Types
 
-- Use JSDoc comments for complex types:
-  ```javascript
-  /**
-   * @typedef {Object} Seat
-   * @property {number} seatId
-   * @property {string} wind
-   * @property {boolean} isHuman
-   * @property {Tile[]} concealedTiles
-   * @property {Meld[]} melds
-   * @property {Tile[]} flowers
-   * @property {number} score
-   */
-  ```
+- Use JSDoc comments for complex types when they help clarify data shape
 - Keep type definitions simple; avoid TypeScript or Flow
-
-### Test Writing
-
-- Use Node.js built-in `node:test` (no external test frameworks)
-- Test file naming: `*.test.js`
-- Use absolute `require` paths for module imports:
-  ```javascript
-  const path = require('node:path')
-  const ROOT = path.resolve(__dirname, '../../..')
-  const rulesPath = path.join(ROOT, 'minigame', 'game', 'config', 'rules', 'mvp')
-  ```
-- Test structure: `test('description', () => { ... })`
-- Assertions: `assert.strictEqual()`, `assert.notEqual()`, `assert.deepStrictEqual()`
 
 ### Game Logic Patterns
 
@@ -183,28 +126,24 @@ tests/
 
 ### Adding a New Rule
 
-1. Implement rule in `minigame/game/core/` (stateMachine, actionEvaluator, winChecker)
-2. Add tests in `tests/minigame/core/`
-3. Update view selectors if UI changes needed
-4. Verify with `npm run test:core`
+1. Implement the rule in `minigame/game/core/`
+2. Update selectors or scene glue if UI changes are needed
+3. Verify the affected gameplay flow manually in WeChat Developer Tools
 
 ### Adding a New UI Feature
 
 1. Add view logic in `minigame/game/selectors/`
 2. Update scene in `minigame/src/scenes/`
-3. Add view tests in `tests/minigame/view/`
-4. Verify with `npm run test:view`
+3. Verify the related page flow manually in WeChat Developer Tools
 
 ### Fixing a Bug
 
-1. Write a failing test first
-2. Fix the code
-3. Verify test passes
-4. Run full regression: `npm test`
+1. Reproduce the bug with the smallest possible manual path
+2. Fix the code in the main `minigame/` implementation
+3. Re-verify the affected flow and nearby transitions manually
 
 ## Important Notes
 
-- **Dual Codebase**: Both `minigame/game/` and `miniprogram/game/` exist. For new features, modify `minigame/` first, then sync if needed
+- **Dual Codebase**: Both `minigame/game/` and `miniprogram/game/` exist. For new features, modify `minigame/` first, then sync only if explicitly required
 - **Tian Ting**: Current implementation is conservative; may need adjustment if full rules are obtained
-- **游金/双游/三游**: Already implemented with proper locking for lastDrawTile
-- **Test Stability**: Always run with `--test-concurrency=1` for deterministic results
+- **游金/双游/三游**: Already implemented with proper locking for `lastDrawTile`
